@@ -4,7 +4,7 @@ import Auth from "./Components/Auth/Auth";
 import ProtectedRoutes from "./Routes/ProtectedRoutes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GuestRoute from "./Routes/GuestRoutes";
-import Navbar from "./Components/Layout/Navbar";
+import AppLayout from "./Components/Layout/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -15,7 +15,11 @@ const App: React.FC = () => {
         <QueryClientProvider client={queryClient}>
           <Routes>
             <Route element={<ProtectedRoutes />}>
-              <Route path="/" element={<Navbar />} />
+              <Route path="/" element={<AppLayout component="dashboard" />} />
+              <Route
+                path="/settings"
+                element={<AppLayout component="settings" />}
+              />
             </Route>
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Auth path="login" />} />

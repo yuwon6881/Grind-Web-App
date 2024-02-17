@@ -1,24 +1,28 @@
-import React, { useEffect, useState } from "react";
-import fetchToken from "../services/auth/FetchToken";
+import React from "react";
+import { fetchToken } from "../services/Fetchs";
 import Loading from "../Components/Loader/Loading";
 import { Navigate, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import Error from "../Components/Error/Error";
 
 const GuestRoute: React.FC = () => {
-  const [valid, setValid] = useState<boolean | null>(null);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["fetchToken"],
+    queryFn: fetchToken,
+  });
 
-  useEffect(() => {
-    fetchToken().then((valid): void => {
-      setValid(valid);
-    });
-  }, []);
-
-  if (valid === null) {
+  if (isLoading) {
     return <Loading />;
   }
 
-  if (valid) {
+  if (isError) {
+    return <Error />;
+  }
+
+  if (data) {
     return <Navigate to="/" />;
   }
+
   return <Outlet />;
 };
 

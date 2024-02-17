@@ -41,55 +41,45 @@ const Login: React.FC = () => {
   return (
     <div className="flex flex-col items-center">
       <h1>Login</h1>
-      <form
-        className="my-10 w-full px-5 md:w-1/2 lg:w-1/3"
-        onSubmit={handleSubmit}
-      >
+      <form className="my-10 px-5 md:w-1/2 lg:w-1/3" onSubmit={handleSubmit}>
         {error && <p className="mb-1 text-sm text-red-500">{error}</p>}
         <input
           type="email"
-          className="block w-full rounded-lg border-gray-200 px-4 py-3 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-400 dark:focus:ring-gray-600"
-          placeholder="Email"
+          className="input input-bordered w-full"
           value={email}
+          placeholder="Email"
           onChange={(e) => setEmail(e.target.value)}
           required={true}
         />
         <input
           type="password"
-          className="mt-3 block w-full rounded-lg border-gray-200 px-4 py-3 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-400 dark:focus:ring-gray-600"
+          className="input input-bordered mt-2 w-full"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required={true}
         />
-        <div className="mt-2 flex justify-end">
-          <Link
-            className="flex text-sm text-blue-600 underline decoration-blue-600 underline-offset-4 hover:opacity-80"
-            to="/register"
-          >
+        <div className="mt-2 flex w-full justify-end">
+          <Link className="link flex items-center" to="/register">
             Register
             <svg
+              className="h-4 w-4 flex-shrink-0"
               xmlns="http://www.w3.org/2000/svg"
-              fill="none"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
-              strokeWidth={1.5}
+              fill="none"
               stroke="currentColor"
-              className="my-auto flex h-4"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m8.25 4.5 7.5 7.5-7.5 7.5"
-              />
+              <path d="m9 18 6-6-6-6" />
             </svg>
           </Link>
         </div>
         <div className="mt-3 flex justify-center">
-          <input
-            type="submit"
-            className="inline-flex cursor-pointer items-center gap-x-2 rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-500 hover:border-blue-600 hover:text-blue-600 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-700 dark:text-gray-400 dark:hover:border-blue-600 dark:hover:text-blue-500 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
-            value="Login"
-          />
+          <input type="submit" className="btn" value="Login" />
         </div>
       </form>
     </div>

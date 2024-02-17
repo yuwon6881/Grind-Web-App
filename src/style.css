@@ -6,4 +6,7 @@
   h1 {
     @apply text-2xl font-semibold;
   }
+  h5 {
+    @apply text-lg font-semibold;
+  }
 }
