@@ -40,10 +40,10 @@ const Preferences = () => {
       if (setGlobalTheme && theme) {
         switch (theme) {
           case "LIGHT":
-            setGlobalTheme("acid");
+            setGlobalTheme("nord");
             break;
           case "DARK":
-            setGlobalTheme("halloween");
+            setGlobalTheme("black");
             break;
         }
       }
@@ -59,7 +59,7 @@ const Preferences = () => {
   };
 
   if (theme === undefined && weightUnit === undefined) {
-    if (globalTheme === "halloween") {
+    if (globalTheme === "black") {
       setTheme("DARK");
     } else {
       setTheme("LIGHT");
@@ -92,7 +92,7 @@ const Preferences = () => {
         </select>
       </label>
       <div className="mt-4 flex justify-center">
-        <input type="submit" value="Apply" className="btn" />
+        <input type="submit" value="Apply" className="btn btn-accent" />
       </div>
     </form>
   );

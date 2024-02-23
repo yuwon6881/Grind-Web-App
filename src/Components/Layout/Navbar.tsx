@@ -18,7 +18,7 @@ const Navbar: React.FC = () => {
       });
 
       if (response.ok || response.status === 401) {
-        navigate("/login", { state: { theme: globalTheme } });
+        navigate("/login");
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -27,15 +27,18 @@ const Navbar: React.FC = () => {
     }
   };
   return (
-    <div className="h-28 shadow-lg">
-      <div className="mx-10 flex h-full justify-between">
+    <div className="h-28 shadow-sm shadow-accent">
+      <div className="relative mx-10 flex h-full justify-between">
         {/* App Logo */}
-        <img
-          src={globalTheme === "acid" ? logoDark : logoLight}
-          alt="App Logo"
-        />
+        <Link to="/">
+          <img
+            src={globalTheme === "nord" ? logoDark : logoLight}
+            alt="App Logo"
+            width={100}
+          />
+        </Link>
         {/* Nav Links */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="absolute bottom-1/2 left-1/2 hidden -translate-x-1/2 translate-y-1/2 transform items-center gap-3 md:flex">
           <Link
             className="link no-underline underline-offset-4 hover:underline"
             to="/"
@@ -66,7 +69,7 @@ const Navbar: React.FC = () => {
               </div>
               <div className="text-nowrap">{globalUser!.name}</div>
             </div>
-            <ul className="menu dropdown-content z-[1] w-52 rounded-box bg-base-100 p-2 shadow">
+            <ul className="menu dropdown-content z-[1] w-52 rounded-lg border border-accent bg-base-100 p-2">
               <li>
                 <Link to="/settings">Setting</Link>
               </li>

@@ -5,7 +5,7 @@ import Profile from "./Profile";
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState("profile");
   return (
-    <div className="card w-auto shadow-xl md:mx-32 xl:mx-96">
+    <div className="card mt-8 w-auto border border-accent md:mx-32 xl:mx-96">
       <div className="card-body">
         <div className="mb-6 flex justify-between">
           <div className="col-span-12 md:col-span-4">
@@ -15,9 +15,7 @@ const Settings: React.FC = () => {
             <div role="tablist" className="tabs-boxed tabs">
               <button
                 role="tab"
-                className={`tab ${
-                  activeTab === "profile" ? "tab-active" : null
-                }`}
+                className={`tab ${activeTab === "profile" ? "tab-active" : ""}`}
                 onClick={() => setActiveTab("profile")}
               >
                 Profile
@@ -25,7 +23,7 @@ const Settings: React.FC = () => {
               <button
                 role="tab"
                 className={`tab ${
-                  activeTab === "preferences" ? "tab-active" : null
+                  activeTab === "preferences" ? "tab-active" : ""
                 }`}
                 onClick={() => setActiveTab("preferences")}
               >
