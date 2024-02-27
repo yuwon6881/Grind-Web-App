@@ -11,3 +11,35 @@ export type Card = {
   record: number;
   exercises: string[];
 };
+
+export type Exercise = {
+  id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+  Exercise_Muscle: ExerciseMuscle[];
+};
+
+export type CustomExercise = {
+  id: string;
+  user_id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+  Custom_Exercise_Muscle: ExerciseMuscle[];
+  Custom_Muscle_Custom_Exercise: ExerciseCustomMuscle[];
+};
+
+type ExerciseMuscle = {
+  muscleType: string;
+  Muscle: {
+    name: string;
+  };
+};
+
+type ExerciseCustomMuscle = {
+  muscleType: string;
+  muscle: {
+    name: string;
+  };
+};

@@ -54,3 +54,43 @@ export const fetchUser = async () => {
     }
   }
 };
+
+export const fetchExercises = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/exercises", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch exercises, status: ${response.status}`);
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchCustomExercises = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/custom_exercises", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch custom exercises, status: ${response.status}`,
+      );
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
