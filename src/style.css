@@ -15,8 +15,37 @@
   h6 {
     @apply text-base font-semibold;
   }
+
+  /* Global Font */
   body {
     font-family: "Montserrat", sans-serif;
+  }
+
+  /* React Calendar Style */
+  .react-calendar {
+    @apply max-w-md rounded-lg border border-accent p-3 pt-0 leading-9;
+  }
+
+  .react-calendar > .react-calendar__navigation {
+    @apply flex justify-around;
+  }
+
+  .react-calendar
+    > .react-calendar__navigation
+    > .react-calendar__navigation__arrow {
+    @apply btn btn-link text-accent-content no-underline;
+  }
+
+  .react-calendar .react-calendar__month-view__weekdays__weekday {
+    @apply flex justify-center;
+  }
+
+  .react-calendar .react-calendar__tile--now {
+    @apply border border-accent;
+  }
+
+  .react-calendar .react-calendar__tile:hover {
+    @apply bg-base-200;
   }
 }
 
@@ -24,7 +53,8 @@
   .btn,
   .input,
   .select,
-  .card {
+  .card,
+  .dropdown-content {
     @apply rounded-lg;
   }
 }

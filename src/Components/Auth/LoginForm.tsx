@@ -32,7 +32,6 @@ const Login: React.FC = () => {
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
-        setEmail("");
         setPassword("");
       }
     }
@@ -41,7 +40,7 @@ const Login: React.FC = () => {
   return (
     <div className="flex flex-col items-center">
       <h1>Login</h1>
-      <form className="my-10 px-5 md:w-1/2 lg:w-1/3" onSubmit={handleSubmit}>
+      <form className="my-10 max-w-lg px-5 md:w-1/2" onSubmit={handleSubmit}>
         {error && <p className="mb-1 text-sm text-red-500">{error}</p>}
         <input
           type="email"

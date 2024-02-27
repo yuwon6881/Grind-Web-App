@@ -47,7 +47,7 @@ const Register: React.FC = () => {
     <div className="flex flex-col items-center">
       <h1>Register</h1>
       <form
-        className="my-10 w-full px-5 md:w-1/2 lg:w-1/3"
+        className="my-10 w-full max-w-lg px-5 md:w-1/2"
         onSubmit={handleSubmit}
       >
         {error && <p className="mb-1 text-sm text-red-500">{error}</p>}

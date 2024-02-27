@@ -1,10 +1,11 @@
 import React from "react";
 import { Card } from "../../Types/Types";
-import { FaTrophy } from "react-icons/fa";
+import { FaTrophy, FaDumbbell } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const CardHistory: React.FC = () => {
   return (
-    <div className="card w-1/2 overflow-hidden border border-accent">
+    <div className="card overflow-hidden border border-accent">
       <div className="card-body">
         <div className="flex flex-col gap-8">
           <div className="avatar placeholder h-12 items-center gap-3">
@@ -18,7 +19,7 @@ const CardHistory: React.FC = () => {
           </div>
           <div className="items-center justify-between lg:flex">
             <h6 className="mb-2 lg:mb-0">Note</h6>
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               <div>
                 <div>
                   <span className="text-sm">Duration</span>
@@ -44,6 +45,25 @@ const CardHistory: React.FC = () => {
           </div>
         </div>
         <div className="divider m-0"></div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <FaDumbbell />
+            <h6>Exercise 1</h6>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaDumbbell />
+            <h6>Exercise 2</h6>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaDumbbell />
+            <h6>Exercise 3</h6>
+          </div>
+        </div>
+        <div className="mt-4 flex justify-center">
+          <Link to="/" className="btn btn-outline btn-sm">
+            View Details
+          </Link>
+        </div>
       </div>
     </div>
   );
