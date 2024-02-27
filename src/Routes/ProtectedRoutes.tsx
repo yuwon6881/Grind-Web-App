@@ -20,7 +20,13 @@ const ProtectedRoutes: React.FC = () => {
   });
 
   // fetch token
-  const { tokenData, tokenLoading, tokenIsStale, tokenRefetch } = useToken();
+  const {
+    tokenData,
+    tokenLoading,
+    tokenIsStale,
+    tokenIsRefetching,
+    tokenRefetch,
+  } = useToken();
 
   // fetch settings
   const { settingData, settingLoading, settingIsError, settingIsFetched } =
@@ -29,7 +35,7 @@ const ProtectedRoutes: React.FC = () => {
   // // fetch user name & profile picture
   const { userData, userLoading, userIsError, userIsFetched } = useUser();
 
-  if (tokenIsStale) tokenRefetch();
+  if (tokenIsStale) if (!tokenIsRefetching) tokenRefetch();
 
   if (tokenLoading) {
     return <Loading />;
@@ -92,7 +98,7 @@ const ProtectedRoutes: React.FC = () => {
 };
 
 function useToken() {
-  const { data, isLoading, isStale, refetch } = useQuery({
+  const { data, isLoading, isStale, refetch, isRefetching } = useQuery({
     queryKey: ["fetchToken"],
     queryFn: fetchToken,
     staleTime: 1000 * 60 * 5,
@@ -102,6 +108,7 @@ function useToken() {
     tokenData: data,
     tokenLoading: isLoading,
     tokenIsStale: isStale,
+    tokenIsRefetching: isRefetching,
     tokenRefetch: refetch,
   };
 }

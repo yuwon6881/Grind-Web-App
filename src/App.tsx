@@ -20,6 +20,14 @@ const App: React.FC = () => {
                 path="/settings"
                 element={<AppLayout component="settings" />}
               />
+              <Route
+                path="/routines"
+                element={<AppLayout component="routines" />}
+              />
+              <Route
+                path="/routine"
+                element={<AppLayout component="routine" />}
+              />
             </Route>
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Auth path="login" />} />

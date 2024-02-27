@@ -5,6 +5,13 @@ import logoDark from "../../Assets/logo_dark.png";
 import logoLight from "../../Assets/logo_light.png";
 import { ThemeContext, UserContext } from "../../services/Contexts";
 
+export const handleClick = () => {
+  const elem = document.activeElement as HTMLElement;
+  if (elem) {
+    elem.blur();
+  }
+};
+
 const Navbar: React.FC = () => {
   //Sign out function
   const navigate = useNavigate();
@@ -26,6 +33,7 @@ const Navbar: React.FC = () => {
       }
     }
   };
+
   return (
     <div className="h-28 shadow-sm shadow-accent">
       <div className="relative mx-10 flex h-full justify-between">
@@ -41,7 +49,7 @@ const Navbar: React.FC = () => {
         <div className="absolute bottom-1/2 left-1/2 hidden -translate-x-1/2 translate-y-1/2 transform items-center gap-3 md:flex">
           <Link
             className="link no-underline underline-offset-4 hover:underline"
-            to="/"
+            to="/routines"
           >
             Routines
           </Link>
@@ -69,9 +77,11 @@ const Navbar: React.FC = () => {
               </div>
               <div className="text-nowrap">{globalUser!.name}</div>
             </div>
-            <ul className="menu dropdown-content z-[1] w-52 rounded-lg border border-accent bg-base-100 p-2">
+            <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2">
               <li>
-                <Link to="/settings">Setting</Link>
+                <Link to="/settings" onClick={handleClick}>
+                  Setting
+                </Link>
               </li>
               <li>
                 <button onClick={signOut}>Sign Out</button>
@@ -97,9 +107,9 @@ const Navbar: React.FC = () => {
                 ></path>
               </svg>
             </button>
-            <ul className="menu dropdown-content z-[1] w-52 rounded-box bg-base-100 p-2 shadow">
+            <ul className="menu dropdown-content z-[1] w-52 bg-base-100 p-2 shadow">
               <li>
-                <Link className="link no-underline" to="/">
+                <Link className="link no-underline" to="/routines">
                   Routines
                 </Link>
               </li>
