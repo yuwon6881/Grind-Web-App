@@ -1,9 +1,10 @@
 import React from "react";
-import { Card } from "../../Types/Types";
 import { FaTrophy, FaDumbbell } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { UserContext } from "../../services/Contexts";
 
 const CardHistory: React.FC = () => {
+  const globalUser = React.useContext(UserContext);
   return (
     <div className="card overflow-hidden border border-accent">
       <div className="card-body">
@@ -13,7 +14,7 @@ const CardHistory: React.FC = () => {
               <span className="text-2xl">C</span>
             </div>
             <div className="flex flex-col">
-              <h2 className="card-title">Username</h2>
+              <h2 className="card-title">{globalUser.globalUser?.name}</h2>
               <span className="text-sm">Date</span>
             </div>
           </div>

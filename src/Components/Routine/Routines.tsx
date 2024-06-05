@@ -7,8 +7,8 @@ import { Link } from "react-router-dom";
 const Routines = () => {
   return (
     <div>
-      <h2>Routines</h2>
-      <div className="dropdown dropdown-end flex justify-end gap-3">
+      <div className="dropdown dropdown-end flex justify-between gap-3">
+        <h2 className="flex items-center">Routines</h2>
         <div
           tabIndex={0}
           role="button"

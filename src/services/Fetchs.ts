@@ -94,3 +94,43 @@ export const fetchCustomExercises = async () => {
     }
   }
 };
+
+export const fetchMuscles = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/muscles", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch muscles, status: ${response.status}`);
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchCustomMuscles = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/custom_muscles", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch custom muscles, status: ${response.status}`,
+      );
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
