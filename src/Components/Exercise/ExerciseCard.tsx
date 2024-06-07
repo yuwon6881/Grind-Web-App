@@ -30,6 +30,7 @@ const ExerciseCard = () => {
   const [exerciseType, setExerciseType] = useState<string | null>(null);
   const [primaryMuscle, setPrimaryMuscle] = useState<string | null>(null);
   const [secondaryMuscle, setSecondaryMuscle] = useState<string[]>([]);
+  const [error, setError] = useState("");
 
   // State to handle exercise filter
   const [selectedMuscle, setSelectedMuscle] = useState("");
@@ -42,6 +43,7 @@ const ExerciseCard = () => {
     { value: "BODYWEIGHT", label: "BodyWeight" },
     { value: "DURATION", label: "Duration" },
   ];
+
   let muscleOptions;
   if (muscleData && customMuscleData) {
     muscleOptions = [...muscleData, ...customMuscleData].map((muscle) => ({
@@ -52,6 +54,10 @@ const ExerciseCard = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!exerciseName || !exerciseType || !primaryMuscle) {
+      setError("Please fill all the fields");
+      return;
+    }
 
     const muscles = primaryMuscle
       ? [{ muscleID: primaryMuscle, muscleType: "PRIMARY" }]
@@ -82,6 +88,7 @@ const ExerciseCard = () => {
     setExerciseType(null);
     setPrimaryMuscle(null);
     setSecondaryMuscle([]);
+    setError("");
 
     customExerciseRefetch();
     (document.getElementById("exercise_modal") as HTMLDialogElement)?.close();
@@ -138,71 +145,104 @@ const ExerciseCard = () => {
             +
           </button>
           <dialog id="exercise_modal" className="modal">
-            <div className="modal-box h-1/3 rounded-xl border border-accent">
+            <div className="modal-box h-1/2 rounded-xl border border-accent">
               {muscleData && customMuscleData && (
                 <form
                   className="mb-2 flex flex-col items-center gap-4"
                   onSubmit={handleSubmit}
                 >
                   <h3 className="text-lg font-bold">Add Exercise</h3>
-                  <input
-                    type="text"
-                    value={exerciseName}
-                    onChange={(event) => setExerciseName(event?.target.value)}
-                    className="input input-bordered w-full max-w-xs"
-                  />
-                  <Select
-                    className="w-full max-w-xs"
-                    options={exerciseOptions}
-                    value={
-                      exerciseType
-                        ? exerciseOptions.find(
-                            (option) => option.value === exerciseType,
+                  {error && (
+                    <div className="flex items-center gap-2 text-sm text-red-500">
+                      <FaExclamationCircle />
+                      {error}
+                    </div>
+                  )}
+                  <div className="flex w-full flex-col gap-3">
+                    <div>
+                      <label htmlFor="exercise_name">Exercise Name</label>
+                      <input
+                        type="text"
+                        value={exerciseName}
+                        onChange={(event) =>
+                          setExerciseName(event?.target.value)
+                        }
+                        className="h-9 w-full rounded border border-accent bg-white p-3 text-black focus-visible:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="exercise_type">Exercise Type</label>
+                      <Select
+                        className="w-full text-black"
+                        options={exerciseOptions}
+                        value={
+                          exerciseType
+                            ? exerciseOptions.find(
+                                (option) => option.value === exerciseType,
+                              )
+                            : null
+                        }
+                        onChange={(e) => e && setExerciseType(e.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="primary_muscle">Primary Muscle</label>
+                      <Select
+                        className="w-full text-black"
+                        value={
+                          primaryMuscle
+                            ? muscleOptions &&
+                              muscleOptions.find(
+                                (option) => option.value === primaryMuscle,
+                              )
+                            : null
+                        }
+                        onChange={(e) => e && setPrimaryMuscle(e.value)}
+                        options={muscleOptions}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="secondary_muscle">Secondary Muscle</label>
+
+                      <Select
+                        className="w-full text-black"
+                        isMulti
+                        value={
+                          muscleOptions &&
+                          secondaryMuscle.map((muscle) =>
+                            muscleOptions.find(
+                              (option: { value: string; name: string }) =>
+                                option.value === muscle,
+                            ),
                           )
-                        : null
-                    }
-                    onChange={(e) => e && setExerciseType(e.value)}
-                  />
-                  <Select
-                    className="w-full max-w-xs"
-                    value={
-                      primaryMuscle
-                        ? muscleOptions &&
-                          muscleOptions.find(
-                            (option) => option.value === primaryMuscle,
+                        }
+                        options={muscleOptions}
+                        onChange={(selectedOptions) =>
+                          setSecondaryMuscle(
+                            selectedOptions.map((option) => option.value),
                           )
-                        : null
-                    }
-                    onChange={(e) => e && setPrimaryMuscle(e.value)}
-                    options={muscleOptions}
-                  />
-                  <Select
-                    className="w-full max-w-xs"
-                    isMulti
-                    value={
-                      muscleOptions &&
-                      secondaryMuscle.map((muscle) =>
-                        muscleOptions.find(
-                          (option: { value: string; name: string }) =>
-                            option.value === muscle,
-                        ),
-                      )
-                    }
-                    options={muscleOptions}
-                    onChange={(selectedOptions) =>
-                      setSecondaryMuscle(
-                        selectedOptions.map((option) => option.value),
-                      )
-                    }
-                  />
-                  <button className="btn" type="submit">
+                        }
+                      />
+                    </div>
+                  </div>
+                  <button className="btn btn-accent" type="submit">
                     Add Exercise
                   </button>
                 </form>
               )}
             </div>
             <form method="dialog" className="modal-backdrop">
-              <button>close</button>
+              <button
+                onClick={() => {
+                  setExerciseName("");
+                  setExerciseType(null);
+                  setPrimaryMuscle(null);
+                  setSecondaryMuscle([]);
+                  setError("");
+                }}
+              >
+                close
+              </button>
             </form>
           </dialog>
         </div>
@@ -234,6 +274,9 @@ const ExerciseCard = () => {
                   (selectedMuscle === "" ||
                     exercise.Custom_Exercise_Muscle.some(
                       (muscle) => muscle.Muscle?.name === selectedMuscle,
+                    ) ||
+                    exercise.Custom_Muscle_Custom_Exercise.some(
+                      (muscle) => muscle.muscle?.name === selectedMuscle,
                     )),
               );
 
