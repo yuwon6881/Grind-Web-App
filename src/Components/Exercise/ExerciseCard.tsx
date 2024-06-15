@@ -8,11 +8,11 @@ import {
 } from "../../services/Fetchs";
 import { useQuery } from "@tanstack/react-query";
 import Loading from "../Loader/Loading";
-import { CustomExercise, Exercise } from "../../Types/Types";
+import { CustomExercise, Exercise, ExerciseCardProps } from "../../Types/Types";
 import Select from "react-select";
 import config from "../../config";
 
-const ExerciseCard = () => {
+const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
   // UseQuery to fetch exercises and muscles
   const { exerciseData, exerciseisLoading, exerciseIsError } = useExercise();
   const {
@@ -55,7 +55,12 @@ const ExerciseCard = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!exerciseName || !exerciseType || !primaryMuscle) {
-      setError("Please fill all the fields");
+      setError("Please fill all the required fields");
+      return;
+    }
+
+    if (secondaryMuscle.includes(primaryMuscle)) {
+      setError("Primary muscle cannot be secondary muscle");
       return;
     }
 
@@ -68,26 +73,40 @@ const ExerciseCard = () => {
       );
     }
 
+    // Get the image
+    const fileInput = document.querySelector(".file-input") as HTMLInputElement;
+
+    const file = fileInput.files?.[0];
+
+    const formData = new FormData();
+
+    if (file) {
+      formData.append("image", file);
+    }
+
+    formData.append("name", exerciseName);
+    formData.append("exerciseType", exerciseType);
+    formData.append("muscles", JSON.stringify(muscles));
+
+    // Submit the form
     const response = await fetch(config.API_URL + "/api/custom_exercise", {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: exerciseName,
-        exerciseType: exerciseType,
-        muscles: muscles,
-      }),
+      body: formData,
     });
+
+    // Handle the response
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message);
     }
+
+    // Reset the form
     setExerciseName("");
     setExerciseType(null);
     setPrimaryMuscle(null);
     setSecondaryMuscle([]);
+    fileInput.value = "";
     setError("");
 
     customExerciseRefetch();
@@ -95,7 +114,7 @@ const ExerciseCard = () => {
   };
 
   return (
-    <div className="card flex flex-col gap-4 border border-accent p-3">
+    <div className="card sticky top-10 h-full flex-col gap-4 border border-accent p-3">
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
       {muscleIsError ||
         (customMuscleIsError && (
@@ -105,7 +124,7 @@ const ExerciseCard = () => {
           </div>
         ))}
       <h5>Exercise Library</h5>
-      <div className="flex flex-col gap-2">
+      <div className="flex h-full flex-col gap-2">
         {muscleData && customMuscleData && (
           <select
             value={selectedMuscle}
@@ -160,7 +179,7 @@ const ExerciseCard = () => {
                   )}
                   <div className="flex w-full flex-col gap-3">
                     <div>
-                      <label htmlFor="exercise_name">Exercise Name</label>
+                      <label htmlFor="exercise_name">Exercise Name*</label>
                       <input
                         type="text"
                         value={exerciseName}
@@ -171,7 +190,7 @@ const ExerciseCard = () => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="exercise_type">Exercise Type</label>
+                      <label htmlFor="exercise_type">Exercise Type*</label>
                       <Select
                         className="w-full text-black"
                         options={exerciseOptions}
@@ -186,7 +205,7 @@ const ExerciseCard = () => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="primary_muscle">Primary Muscle</label>
+                      <label htmlFor="primary_muscle">Primary Muscle*</label>
                       <Select
                         className="w-full text-black"
                         value={
@@ -198,7 +217,12 @@ const ExerciseCard = () => {
                             : null
                         }
                         onChange={(e) => e && setPrimaryMuscle(e.value)}
-                        options={muscleOptions}
+                        options={muscleOptions?.filter((value) => {
+                          if (secondaryMuscle.includes(value.value)) {
+                            return false;
+                          }
+                          return true;
+                        })}
                       />
                     </div>
                     <div>
@@ -216,7 +240,12 @@ const ExerciseCard = () => {
                             ),
                           )
                         }
-                        options={muscleOptions}
+                        options={muscleOptions?.filter((value) => {
+                          if (primaryMuscle === value.value) {
+                            return false;
+                          }
+                          return true;
+                        })}
                         onChange={(selectedOptions) =>
                           setSecondaryMuscle(
                             selectedOptions.map((option) => option.value),
@@ -224,6 +253,19 @@ const ExerciseCard = () => {
                         }
                       />
                     </div>
+                    <label
+                      htmlFor="file-upload"
+                      className="rounded-lg bg-accent p-2 text-center text-accent-content hover:cursor-pointer hover:bg-success"
+                    >
+                      Choose Image
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/*"
+                      className="file-input w-full"
+                      style={{ display: "none" }}
+                    />
                   </div>
                   <button className="btn btn-accent" type="submit">
                     Add Exercise
@@ -257,7 +299,10 @@ const ExerciseCard = () => {
           ))}
 
         {exerciseData && customExerciseData && (
-          <div className="flex flex-col gap-3 p-1">
+          <div
+            className="flex h-full flex-col gap-3 overflow-auto p-1"
+            style={{ height: "66vh" }}
+          >
             {(() => {
               const filteredExerciseData = exerciseData.filter(
                 (exercise) =>
@@ -298,6 +343,7 @@ const ExerciseCard = () => {
                         key={exercise.id}
                         name={exercise.name}
                         muscle={primaryMuscle}
+                        onClick={() => onExerciseClick(exercise)}
                       />
                     );
                   })}
@@ -314,6 +360,7 @@ const ExerciseCard = () => {
                       <CustomExerciseList
                         key={exercise.id}
                         name={exercise.name}
+                        onClick={() => onExerciseClick(exercise)}
                         muscle={primaryMuscle}
                       />
                     );
@@ -328,27 +375,35 @@ const ExerciseCard = () => {
   );
 };
 
-const ExerciseList: React.FC<{ name: string; muscle: string }> = ({
-  name,
-  muscle,
-}) => {
+const ExerciseList: React.FC<{
+  name: string;
+  muscle: string;
+  onClick: () => void;
+}> = ({ name, muscle, onClick }) => {
   return (
-    <div className="flex items-center gap-4">
+    <button
+      className="flex items-center gap-4 hover:cursor-pointer"
+      onClick={onClick}
+    >
       <FaDumbbell />
       <div className="flex flex-col items-start">
         <div className="font-semibold">{name}</div>
         <div className="text-sm">{muscle}</div>
       </div>
-    </div>
+    </button>
   );
 };
 
-const CustomExerciseList: React.FC<{ name: string; muscle: string }> = ({
-  name,
-  muscle,
-}) => {
+const CustomExerciseList: React.FC<{
+  name: string;
+  muscle: string;
+  onClick: () => void;
+}> = ({ name, muscle, onClick }) => {
   return (
-    <div className="flex items-center gap-4">
+    <button
+      className="flex items-center gap-4 hover:cursor-pointer"
+      onClick={onClick}
+    >
       <FaDumbbell />
       <div className="flex flex-grow flex-col items-start">
         <div className="font-semibold">{name}</div>
@@ -359,7 +414,7 @@ const CustomExerciseList: React.FC<{ name: string; muscle: string }> = ({
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

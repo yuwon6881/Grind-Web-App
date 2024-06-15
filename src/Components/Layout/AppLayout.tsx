@@ -24,9 +24,9 @@ const AppLayout: React.FC<{ component: string }> = ({ component }) => {
   }
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <Navbar />
-      <div className="mt-4 flex justify-center">
+      <div className="mt-4 flex flex-grow justify-center">
         <div className="container">{Content}</div>
       </div>
     </div>
