@@ -50,5 +50,15 @@ type ExerciseCustomMuscle = {
 
 export type ExerciseInfo = {
   name: string;
+  restTime: string;
+  note: string;
   id: string;
+};
+
+export type ExerciseSet = {
+  id: string;
+  sets: number | string;
+  reps: number | string;
+  weight: number | string;
+  rpe: number | string;
 };

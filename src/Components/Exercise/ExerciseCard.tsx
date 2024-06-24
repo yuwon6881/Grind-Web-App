@@ -114,7 +114,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
   };
 
   return (
-    <div className="card sticky top-10 h-full flex-col gap-4 border border-accent p-3">
+    <div
+      className="card sticky top-10 h-full flex-col gap-4 border border-accent p-3"
+      style={{ height: "85vh" }}
+    >
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
       {muscleIsError ||
         (customMuscleIsError && (
@@ -299,10 +302,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
           ))}
 
         {exerciseData && customExerciseData && (
-          <div
-            className="flex h-full flex-col gap-3 overflow-auto p-1"
-            style={{ height: "66vh" }}
-          >
+          <div className="mb-10 flex h-full flex-col gap-3 overflow-auto p-1">
             {(() => {
               const filteredExerciseData = exerciseData.filter(
                 (exercise) =>
@@ -343,7 +343,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                         key={exercise.id}
                         name={exercise.name}
                         muscle={primaryMuscle}
-                        onClick={() => onExerciseClick(exercise)}
+                        onClick={() =>
+                          onExerciseClick({
+                            ...exercise,
+                            restTime: "0",
+                            note: "",
+                          })
+                        }
                       />
                     );
                   })}
@@ -360,7 +366,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                       <CustomExerciseList
                         key={exercise.id}
                         name={exercise.name}
-                        onClick={() => onExerciseClick(exercise)}
+                        image={exercise.image}
+                        onClick={() =>
+                          onExerciseClick({
+                            ...exercise,
+                            restTime: "0",
+                            note: "",
+                          })
+                        }
                         muscle={primaryMuscle}
                       />
                     );
@@ -397,14 +410,18 @@ const ExerciseList: React.FC<{
 const CustomExerciseList: React.FC<{
   name: string;
   muscle: string;
+  image: string | null;
   onClick: () => void;
-}> = ({ name, muscle, onClick }) => {
+}> = ({ name, muscle, image, onClick }) => {
   return (
     <button
       className="flex items-center gap-4 hover:cursor-pointer"
       onClick={onClick}
     >
-      <FaDumbbell />
+      {image === null && <FaDumbbell />}
+      {image !== null && (
+        <img src={`${image}`} alt="Description" width="18" height="18" />
+      )}
       <div className="flex flex-grow flex-col items-start">
         <div className="font-semibold">{name}</div>
         <div className="flex w-full justify-between text-sm">
