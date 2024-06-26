@@ -44,7 +44,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
     { value: "DURATION", label: "Duration" },
   ];
 
-  let muscleOptions;
+  let muscleOptions: { value: string; label: string }[] = [];
   if (muscleData && customMuscleData) {
     muscleOptions = [...muscleData, ...customMuscleData].map((muscle) => ({
       value: muscle.id,
@@ -238,7 +238,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                           muscleOptions &&
                           secondaryMuscle.map((muscle) =>
                             muscleOptions.find(
-                              (option: { value: string; name: string }) =>
+                              (option: { value: string; label: string }) =>
                                 option.value === muscle,
                             ),
                           )
@@ -251,7 +251,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                         })}
                         onChange={(selectedOptions) =>
                           setSecondaryMuscle(
-                            selectedOptions.map((option) => option.value),
+                            Array.isArray(selectedOptions)
+                              ? selectedOptions.map((option) => option.value)
+                              : [],
                           )
                         }
                       />
@@ -420,7 +422,13 @@ const CustomExerciseList: React.FC<{
     >
       {image === null && <FaDumbbell />}
       {image !== null && (
-        <img src={`${image}`} alt="Description" width="18" height="18" />
+        <img
+          src={`${image}`}
+          alt="Description"
+          width="18"
+          height="18"
+          className="rounded"
+        />
       )}
       <div className="flex flex-grow flex-col items-start">
         <div className="font-semibold">{name}</div>
