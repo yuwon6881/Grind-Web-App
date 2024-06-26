@@ -422,13 +422,7 @@ const CustomExerciseList: React.FC<{
     >
       {image === null && <FaDumbbell />}
       {image !== null && (
-        <img
-          src={`${image}`}
-          alt="Description"
-          width="18"
-          height="18"
-          className="rounded"
-        />
+        <img src={`${image}`} alt="Description" width="18" height="18" />
       )}
       <div className="flex flex-grow flex-col items-start">
         <div className="font-semibold">{name}</div>
