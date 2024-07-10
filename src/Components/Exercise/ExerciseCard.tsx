@@ -268,8 +268,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                       id="file-upload"
                       type="file"
                       accept="image/*"
-                      className="file-input w-full"
-                      style={{ display: "none" }}
+                      className="file-input hidden w-full"
                     />
                   </div>
                   <button className="btn btn-accent" type="submit">
@@ -348,6 +347,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                         onClick={() =>
                           onExerciseClick({
                             ...exercise,
+                            custom: false,
                             restTime: "0",
                             note: "",
                           })
@@ -372,6 +372,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                         onClick={() =>
                           onExerciseClick({
                             ...exercise,
+                            custom: true,
                             restTime: "0",
                             note: "",
                           })

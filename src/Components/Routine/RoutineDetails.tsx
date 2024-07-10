@@ -7,21 +7,116 @@ import { ExerciseInfo, ExerciseSet } from "../../Types/Types";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
 import { v4 as uuidv4 } from "uuid";
+import config from "../../config";
+import { useQuery } from "@tanstack/react-query";
+import { fetchDefaultFolder } from "../../services/Fetchs";
+import ErrorMessage from "../Error/Error";
 
 const RoutineDetails = () => {
   const [exercises, setExercises] = React.useState<ExerciseInfo[]>([]);
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
+  const [routineName, setRoutineName] = React.useState("");
+
+  // Retrieve default folder id
+  const { data, isError } = useQuery({
+    queryKey: ["defaultFolder"],
+    queryFn: fetchDefaultFolder,
+  });
+
+  if (isError) {
+    return <ErrorMessage />;
+  }
+
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    e.preventDefault();
+
+    // Create routine
+    try {
+      const routineResponse = await fetch(
+        config.API_URL + `/api/folder/${data}/routine`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: routineName }),
+        },
+      );
+
+      if (!routineResponse.ok) {
+        const error = await routineResponse.json();
+        throw new Error(error.message);
+      }
+
+      const routineData = await routineResponse.json();
+
+      const formattedExercises = exercises.map((exercise, index) => {
+        const sets = exerciseSets
+          .filter((set) => set.id === exercise.id)
+          .map((set, index) => ({
+            reps: set.reps ? parseInt(set.reps as string) : null,
+            weight: set.weight ? parseFloat(set.weight as string) : null,
+            rpe: set.rpe ? parseFloat(set.rpe as string) : null,
+            index: index + 1,
+            set_type: set.set_type,
+            set_uuid: exercise.id.split("@")[1],
+          }));
+
+        return {
+          exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
+          custom_exercise_id: exercise.custom
+            ? exercise.id.split("@")[0]
+            : undefined,
+          routine_uuid: exercise.id.split("@")[1],
+          index: index + 1,
+          rest_timer: exercise.restTime ? parseFloat(exercise.restTime) : null,
+          note: exercise.note,
+          sets,
+        };
+      });
+
+      const routineExerciseResponse = await fetch(
+        config.API_URL + `/api/routine/${routineData.data.id}/exercises`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ exercises: formattedExercises }),
+        },
+      );
+
+      if (!routineExerciseResponse.ok) {
+        const error = await routineExerciseResponse.json();
+        throw new Error(error.message);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+    }
+  }
   return (
     <div className="grid h-full grid-cols-3 gap-10">
       <div className="hidden md:block">
         <ExerciseCard
           onExerciseClick={(exercise: ExerciseInfo): void => {
             // Create a unique ID for each exercise
-            const exerciseID = exercise.id + "-" + uuidv4();
+            const exerciseID = exercise.id + "@" + uuidv4();
 
             setExercises([
               ...exercises,
-              { name: exercise.name, id: exerciseID, restTime: "0", note: "" },
+              {
+                name: exercise.name,
+                id: exerciseID,
+                restTime: exercise.restTime,
+                note: exercise.note,
+                custom: exercise.custom,
+              },
             ]);
 
             setExerciseSets([
@@ -31,30 +126,76 @@ const RoutineDetails = () => {
                 sets: "",
                 reps: "",
                 weight: "",
+                set_type: "NORMAL",
                 rpe: "",
               },
             ]);
           }}
         />
       </div>
-      <div className="col-span-3 md:col-span-2">
-        <div className="flex justify-between">
-          <Link
-            to="/routines"
-            className="flex items-center gap-2 text-lg underline-offset-4 hover:underline"
-          >
-            <BiLeftArrowAlt />
-            Routine
-          </Link>
-          <button className="hover:text-primary">
-            <BiSave className="text-3xl" />
-          </button>
+      <dialog id="ss_exercise_modal" className="modal">
+        <div className="modal-box overflow-hidden rounded-3xl p-0">
+          <ExerciseCard
+            onExerciseClick={(exercise: ExerciseInfo): void => {
+              // Create a unique ID for each exercise
+              const exerciseID = exercise.id + "@" + uuidv4();
+
+              setExercises([
+                ...exercises,
+                {
+                  name: exercise.name,
+                  id: exerciseID,
+                  restTime: exercise.restTime,
+                  note: exercise.note,
+                  custom: exercise.custom,
+                },
+              ]);
+
+              setExerciseSets([
+                ...exerciseSets,
+                {
+                  id: exerciseID,
+                  sets: "",
+                  reps: "",
+                  weight: "",
+                  set_type: "NORMAL",
+                  rpe: "",
+                },
+              ]);
+
+              (
+                document.getElementById(
+                  "ss_exercise_modal",
+                ) as HTMLDialogElement
+              ).close();
+            }}
+          />
         </div>
-        <form className="mt-2 flex flex-col gap-2">
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+      <div className="col-span-3 md:col-span-2">
+        <form className="mt-2 flex flex-col gap-2" onSubmit={handleSubmit}>
+          <div className="flex justify-between">
+            <Link
+              to="/routines"
+              className="flex items-center gap-2 text-lg underline-offset-4 hover:underline"
+            >
+              <BiLeftArrowAlt />
+              Routine
+            </Link>
+            <button className="hover:text-primary">
+              <BiSave className="text-3xl" />
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Routine Name"
             className="input input-sm input-bordered w-full"
+            value={routineName}
+            onChange={(e) => setRoutineName(e.target.value)}
+            required
           />
           {exercises.length === 0 ? (
             <>
@@ -65,7 +206,19 @@ const RoutineDetails = () => {
                   exercise.
                 </div>
                 <div className="mt-2 flex justify-center">
-                  <button className="btn btn-accent btn-sm">Add</button>
+                  <button
+                    type="button"
+                    className="btn btn-accent btn-sm"
+                    onClick={() =>
+                      (
+                        document.getElementById(
+                          "ss_exercise_modal",
+                        ) as HTMLDialogElement
+                      )?.showModal()
+                    }
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
               <div className="hidden md:block">
@@ -76,22 +229,39 @@ const RoutineDetails = () => {
               </div>
             </>
           ) : (
-            exercises.map((exercise, index) => (
-              <div
-                key={`${exercise.id}-${index}`}
-                id={`id${exercise.id}-${index}`}
-                className="card card-compact flex flex-col gap-3 border border-accent"
-              >
-                <Exercise
-                  exercise={exercise}
-                  index={index}
-                  exercises={exercises}
-                  setExercises={setExercises}
-                  exerciseSets={exerciseSets}
-                  setExerciseSets={setExerciseSets}
-                />
+            <>
+              {exercises.map((exercise, index) => (
+                <div
+                  key={`${exercise.id}-${index}`}
+                  id={`id${exercise.id}-${index}`}
+                  className="card card-compact flex flex-col gap-3 border border-accent"
+                >
+                  <Exercise
+                    exercise={exercise}
+                    index={index}
+                    exercises={exercises}
+                    setExercises={setExercises}
+                    exerciseSets={exerciseSets}
+                    setExerciseSets={setExerciseSets}
+                  />
+                </div>
+              ))}
+              <div className="mt-2 flex justify-center md:hidden">
+                <button
+                  type="button"
+                  className="btn btn-accent btn-sm"
+                  onClick={() =>
+                    (
+                      document.getElementById(
+                        "ss_exercise_modal",
+                      ) as HTMLDialogElement
+                    )?.showModal()
+                  }
+                >
+                  Add
+                </button>
               </div>
-            ))
+            </>
           )}
         </form>
       </div>
@@ -121,12 +291,13 @@ const Exercise: React.FC<{
   }
 
   function addSet(id: string): void {
-    const newSet = {
+    const newSet: ExerciseSet = {
       id: id,
       sets: "",
       reps: "",
       weight: "",
       rpe: "",
+      set_type: "NORMAL",
     };
     setExerciseSets([...exerciseSets, newSet]);
   }
@@ -256,8 +427,8 @@ const Sets: React.FC<{
 
   function updateSet(
     setIndex: number,
-    updateType: "weight" | "rpe" | "reps",
-    newValue: number,
+    updateType: "weight" | "rpe" | "reps" | "set_type",
+    newValue: number | "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP",
   ): void {
     setExerciseSets((sets) => {
       let filteredSets = sets.filter((set) => set.id === exercise.id);
@@ -270,6 +441,14 @@ const Sets: React.FC<{
               return { ...filteredSet, rpe: newValue };
             case "reps":
               return { ...filteredSet, reps: newValue };
+            case "set_type":
+              return {
+                ...filteredSet,
+                set_type: newValue as
+                  | "NORMAL"
+                  | "DROPSET"
+                  | "LONG_LENGTH_PARTIAL",
+              };
             default:
               return filteredSet;
           }
@@ -289,6 +468,27 @@ const Sets: React.FC<{
             <div className="flex flex-col items-center gap-2">
               <span>Sets</span>
               <span>{setIndex + 1}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span>Set Type</span>
+              <select
+                id="a"
+                value={set.set_type}
+                className="select select-accent select-sm max-w-28"
+                onChange={(e) => {
+                  const setType = e.target.value as
+                    | "NORMAL"
+                    | "DROPSET"
+                    | "LONG_LENGTH_PARTIAL"
+                    | "WARMUP";
+                  updateSet(setIndex, "set_type", setType);
+                }}
+              >
+                <option value="NORMAL">Normal</option>
+                <option value="WARMUP">Warmup</option>
+                <option value="DROPSET">Dropset</option>
+                <option value="LONG_LENGTH_PARTIAL">LLP</option>
+              </select>
             </div>
             <div className="flex flex-col items-center gap-1">
               <span>Weights</span>

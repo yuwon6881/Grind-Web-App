@@ -134,3 +134,24 @@ export const fetchCustomMuscles = async () => {
     }
   }
 };
+
+export const fetchDefaultFolder = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/defaultFolder", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch default folder, status: ${response.status}`,
+      );
+
+    const data = await response.json();
+    return data.data.id;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};

@@ -50,6 +50,7 @@ type ExerciseCustomMuscle = {
 
 export type ExerciseInfo = {
   name: string;
+  custom: boolean;
   restTime: string;
   note: string;
   id: string;
@@ -61,4 +62,5 @@ export type ExerciseSet = {
   reps: number | string;
   weight: number | string;
   rpe: number | string;
+  set_type: "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP";
 };
