@@ -1,13 +1,18 @@
 import React from "react";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
+import { deleteRoutine } from "../../services/Fetchs";
 
-const routine = () => {
+const routine: React.FC<{
+  name: string;
+  id: string;
+  routineRefetch: () => void;
+}> = ({ name, id, routineRefetch }) => {
   return (
     <div className="card border border-accent">
       <div className="card-body p-4">
         <div className="flex items-center justify-between">
-          <h6>Example</h6>
+          <h6>{name}</h6>
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button">
               <HiDotsVertical />
@@ -19,7 +24,15 @@ const routine = () => {
                 </button>
               </li>
               <li>
-                <button onClick={handleClick} className="text-red-600">
+                <button
+                  onClick={() => {
+                    deleteRoutine(id).then(() => {
+                      handleClick();
+                      routineRefetch();
+                    });
+                  }}
+                  className="text-red-600"
+                >
                   Delete
                 </button>
               </li>

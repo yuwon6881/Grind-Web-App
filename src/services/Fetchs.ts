@@ -155,3 +155,93 @@ export const fetchDefaultFolder = async () => {
     }
   }
 };
+
+export const fetchRoutinesWithFolders = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/routines", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch routines, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchFolders = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/folders", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch folders, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const deleteRoutine = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/routine/" + id, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to delete routine, status: ${response.status}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const deleteFolder = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/folder/" + id, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to delete folder, status: ${response.status}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const addFolder = async (name: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/folder", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to add folder, status: ${response.status}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
