@@ -72,7 +72,17 @@ const Navbar: React.FC = () => {
             <div tabIndex={0} role="button" className="btn m-1 flex-nowrap">
               <div className="avatar placeholder">
                 <div className="w-10 rounded-full bg-neutral text-neutral-content">
-                  <span className="text-xl">C</span>
+                  {globalUser!.profilePicture ? (
+                    <img
+                      src={globalUser!.profilePicture}
+                      alt="User Profile"
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-xl">
+                      {globalUser!.name.charAt(0)}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="text-nowrap">{globalUser!.name}</div>

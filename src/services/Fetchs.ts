@@ -245,3 +245,20 @@ export const addFolder = async (name: string) => {
     }
   }
 };
+
+export const updateUser = async (formData: FormData): Promise<Response> => {
+  try {
+    const response = await fetch(config.API_URL + "/api/user", {
+      method: "PUT",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to edit profile, status: ${response.status}`);
+
+    return response;
+  } catch (error: unknown) {
+    return Promise.reject(new Error("An unknown error occurred"));
+  }
+};
