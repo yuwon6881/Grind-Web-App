@@ -13,9 +13,17 @@ const Dashboard: React.FC = () => {
   });
 
   const getTileClassName = ({ date }: { date: Date }) => {
-    if (date.getDate() === 25 && date.getMonth() + 1 === 6) {
-      return "bg-base-300";
+    if (data) {
+      for (const workout of data) {
+        if (
+          date.getDate() === new Date(workout.start_date).getDate() &&
+          date.getMonth() === new Date(workout.start_date).getMonth()
+        ) {
+          return "bg-base-300";
+        }
+      }
     }
+    return "bg-default";
   };
 
   return (
