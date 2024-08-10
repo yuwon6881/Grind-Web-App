@@ -11,11 +11,15 @@ import config from "../../config";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDefaultFolder } from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
+import { WeightUnitContext } from "../../services/Contexts";
+import { useNavigate } from "react-router-dom";
 
 const RoutineDetails = () => {
   const [exercises, setExercises] = React.useState<ExerciseInfo[]>([]);
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
   const [routineName, setRoutineName] = React.useState("");
+  const { globalWeightUnit } = React.useContext(WeightUnitContext);
+  const navigate = useNavigate();
 
   // Retrieve default folder id
   const { data, isError } = useQuery({
@@ -58,7 +62,11 @@ const RoutineDetails = () => {
           .filter((set) => set.id === exercise.id)
           .map((set, index) => ({
             reps: set.reps ? parseInt(set.reps as string) : null,
-            weight: set.weight ? parseFloat(set.weight as string) : null,
+            weight: set.weight
+              ? globalWeightUnit === "KG"
+                ? parseFloat(set.weight as string)
+                : parseFloat(set.weight as string) / 2.20462
+              : null,
             rpe: set.rpe ? parseFloat(set.rpe as string) : null,
             index: index + 1,
             set_type: set.set_type,
@@ -94,6 +102,8 @@ const RoutineDetails = () => {
         const error = await routineExerciseResponse.json();
         throw new Error(error.message);
       }
+
+      navigate("/routines");
     } catch (error: unknown) {
       if (error instanceof Error) {
         throw new Error(error.message);

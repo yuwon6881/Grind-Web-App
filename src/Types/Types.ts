@@ -64,3 +64,71 @@ export type ExerciseSet = {
   rpe: number | string;
   set_type: "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP";
 };
+
+type ExerciseForWorkoutHistory = {
+  id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+};
+
+type CustomExerciseForWorkoutHistory = {
+  id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+  user_id: string;
+};
+
+type WorkoutExercise = {
+  workout_id: string;
+  exercise_id: string;
+  workout_uuid: string;
+  index: number;
+  rest_timer: number;
+  note: string;
+  Exercise: ExerciseForWorkoutHistory;
+};
+
+type WorkoutCustomExercise = {
+  workout_id: string;
+  custom_exercise_id: string;
+  workout_uuid: string;
+  index: number;
+  rest_timer: number;
+  note: string;
+  Custom_Exercise: CustomExerciseForWorkoutHistory;
+};
+
+type PersonalRecord = {
+  id: string;
+  workout_set_id: string;
+};
+
+type WorkoutSet = {
+  id: string;
+  weight: number;
+  reps: number;
+  rpe: number;
+  volume: number;
+  index: number;
+  set_type: string;
+  workout_id: string;
+  exercise_id: string | null;
+  custom_exercise_id: string | null;
+  set_uuid: string;
+  Personal_Record: PersonalRecord | null;
+};
+
+export type Workout = {
+  id: string;
+  start_date: string;
+  end_date: string | null;
+  name: string;
+  duration: number | null;
+  status: string;
+  routine_id: string;
+  Workout_Exercise: WorkoutExercise[];
+  Workout_Custom_Exercise: WorkoutCustomExercise[];
+  Workout_Sets: WorkoutSet[];
+};

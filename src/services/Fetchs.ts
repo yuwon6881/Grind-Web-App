@@ -262,3 +262,22 @@ export const updateUser = async (formData: FormData): Promise<Response> => {
     return Promise.reject(new Error("An unknown error occurred"));
   }
 };
+
+export const fetchWorkouts = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workouts", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch workouts, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
