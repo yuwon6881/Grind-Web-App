@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { FaDumbbell, FaExclamationCircle } from "react-icons/fa";
 import {
+  deleteCustomExercise,
   fetchCustomExercises,
   fetchCustomMuscles,
   fetchExercises,
   fetchMuscles,
 } from "../../services/Fetchs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Loading from "../Loader/Loading";
 import { CustomExercise, Exercise, ExerciseCardProps } from "../../Types/Types";
 import Select from "react-select";
 import config from "../../config";
+import { BiTrash } from "react-icons/bi";
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
   // UseQuery to fetch exercises and muscles
@@ -369,6 +371,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                         key={exercise.id}
                         name={exercise.name}
                         image={exercise.image}
+                        id={exercise.id}
                         onClick={() =>
                           onExerciseClick({
                             ...exercise,
@@ -413,28 +416,86 @@ const ExerciseList: React.FC<{
 const CustomExerciseList: React.FC<{
   name: string;
   muscle: string;
+  id: string;
   image: string | null;
   onClick: () => void;
-}> = ({ name, muscle, image, onClick }) => {
+}> = ({ name, muscle, image, id, onClick }) => {
+  const queryClient = useQueryClient();
+
+  const deleteExercise = async (id: string) => {
+    await deleteCustomExercise(id);
+    queryClient.invalidateQueries({
+      queryKey: ["customExercises"],
+    });
+  };
+
+  const deleteAlert = (id: string) => {
+    return (
+      <dialog id="deleteAlert" className="modal">
+        <div className="modal-box pb-2">
+          <p className="text-center text-lg font-semibold">
+            Confirm Delete Exercise?
+          </p>
+          <form method="dialog" className="flex justify-center gap-10 py-4">
+            <div className="flex gap-3">
+              <button className="btn btn-accent text-accent-content">
+                Cancel
+              </button>
+              <button
+                className="btn btn-error text-error-content"
+                onClick={() => {
+                  deleteExercise(id);
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+    );
+  };
+
   return (
-    <button
-      className="flex items-center gap-4 hover:cursor-pointer"
-      onClick={onClick}
-    >
-      {image === null && <FaDumbbell />}
-      {image !== null && (
-        <img src={`${image}`} alt="Description" width="18" height="18" />
-      )}
-      <div className="flex flex-grow flex-col items-start">
-        <div className="font-semibold">{name}</div>
-        <div className="flex w-full justify-between text-sm">
-          <span>{muscle}</span>
-          <div className="flex items-center rounded-md bg-accent px-2 py-1 text-xs font-semibold">
-            Custom
+    <>
+      {deleteAlert(id)}
+      <button
+        className="flex items-center gap-4 hover:cursor-pointer"
+        onClick={onClick}
+      >
+        {image === null && <FaDumbbell />}
+        {image !== null && (
+          <img src={`${image}`} alt="Description" width="18" height="18" />
+        )}
+        <div className="grid flex-grow grid-cols-12">
+          <div className="col-span-10 flex flex-col items-start">
+            <div className="font-semibold">{name}</div>
+            <div className="flex w-full justify-between text-sm">
+              <span>{muscle}</span>
+              <div className="flex items-center">
+                <div className="rounded-md bg-accent px-2 py-1 text-xs font-semibold">
+                  Custom
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-span-2 flex items-center justify-end">
+            <BiTrash
+              type="button"
+              className="text-2xl text-red-600"
+              onClick={() => {
+                (
+                  document.getElementById("deleteAlert") as HTMLDialogElement
+                ).showModal();
+              }}
+            />
           </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </>
   );
 };
 

@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
           </Link>
           <Link
             className="link no-underline underline-offset-4 hover:underline"
-            to="/"
+            to="/exercises"
           >
             Exercises
           </Link>
@@ -129,7 +129,7 @@ const Navbar: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link className="link no-underline" to="/">
+                <Link className="link no-underline" to="/exercises">
                   Exercises
                 </Link>
               </li>

@@ -281,3 +281,65 @@ export const fetchWorkouts = async () => {
     }
   }
 };
+
+export const deleteCustomExercise = async (id: string) => {
+  try {
+    const response = await fetch(
+      config.API_URL + "/api/custom_exercise/" + id,
+      {
+        method: "DELETE",
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(`Failed to delete exercise, status: ${response.status}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchExercise = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/exercise/" + id, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch exercise, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchCustomExercise = async (id: string) => {
+  try {
+    const response = await fetch(
+      config.API_URL + "/api/custom_exercise/" + id,
+      {
+        method: "GET",
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch custom exercise, status: ${response.status}`,
+      );
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};

@@ -12,6 +12,7 @@ const CardHistory: React.FC<{ data: Workout }> = ({ data }) => {
     name: exercise.Exercise.name,
     index: exercise.index,
     id: exercise.exercise_id,
+    image: exercise.Exercise.image,
     exercise: true,
   }));
 
@@ -20,6 +21,7 @@ const CardHistory: React.FC<{ data: Workout }> = ({ data }) => {
       name: customExercise.Custom_Exercise.name,
       index: customExercise.index,
       id: customExercise.custom_exercise_id,
+      image: customExercise.Custom_Exercise.image,
       exercise: false,
     }),
   );
@@ -57,7 +59,7 @@ const CardHistory: React.FC<{ data: Workout }> = ({ data }) => {
             </div>
             <div className="flex flex-col">
               <h2 className="card-title">{globalUser?.name}</h2>
-              <span className="text-sm">
+              <span className="w-full text-sm">
                 {new Date(data.start_date).toLocaleDateString()}
               </span>
             </div>
@@ -78,7 +80,7 @@ const CardHistory: React.FC<{ data: Workout }> = ({ data }) => {
                     {globalWeightUnit === "KG"
                       ? Math.floor(totalVolume)
                       : Math.floor(totalVolume * 2.20462)}
-                    {globalWeightUnit?.toLowerCase()}
+                    {globalWeightUnit?.toLowerCase() === "kg" ? "kg" : "lbs"}
                   </h6>
                 </div>
               </div>
@@ -98,7 +100,15 @@ const CardHistory: React.FC<{ data: Workout }> = ({ data }) => {
         <div className="flex flex-col gap-3">
           {sortedExercises.map((exercise) => (
             <div key={exercise.id} className="flex items-center gap-2">
-              <FaDumbbell />
+              {exercise.image ? (
+                <img
+                  src={exercise.image}
+                  alt={exercise.name}
+                  className="h-8 w-8 rounded-full"
+                />
+              ) : (
+                <FaDumbbell />
+              )}
               <h6>
                 {exercise.exercise
                   ? data.Workout_Sets.filter(

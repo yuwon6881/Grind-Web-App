@@ -17,7 +17,8 @@ const Dashboard: React.FC = () => {
       for (const workout of data) {
         if (
           date.getDate() === new Date(workout.start_date).getDate() &&
-          date.getMonth() === new Date(workout.start_date).getMonth()
+          date.getMonth() === new Date(workout.start_date).getMonth() &&
+          workout.status === "COMPLETED"
         ) {
           return "bg-base-300";
         }
@@ -39,7 +40,7 @@ const Dashboard: React.FC = () => {
           )}
           {data &&
             data
-              .filter((workout: Workout) => workout.status == "IN_PROGRESS")
+              .filter((workout: Workout) => workout.status == "COMPLETED")
               .map((workout: Workout) => (
                 <CardHistory key={workout.id} data={workout} />
               ))}
