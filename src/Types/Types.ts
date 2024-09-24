@@ -34,14 +34,14 @@ export type ExerciseCardProps = {
   onExerciseClick: (exercise: ExerciseInfo) => void;
 };
 
-type ExerciseMuscle = {
+export type ExerciseMuscle = {
   muscleType: string;
   Muscle: {
     name: string;
   };
 };
 
-type ExerciseCustomMuscle = {
+export type ExerciseCustomMuscle = {
   muscleType: string;
   muscle: {
     name: string;
@@ -131,4 +131,21 @@ export type Workout = {
   Workout_Exercise: WorkoutExercise[];
   Workout_Custom_Exercise: WorkoutCustomExercise[];
   Workout_Sets: WorkoutSet[];
+};
+
+export type SingleCustomExercise = {
+  id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+  Custom_Exercise_Muscle: ExerciseMuscle[];
+  Custom_Muscle_Custom_Exercise: ExerciseCustomMuscle[];
+};
+
+export type SingleExercise = {
+  id: string;
+  name: string;
+  image: string | null;
+  exerciseType: string;
+  Exercise_Muscle: ExerciseMuscle[];
 };
