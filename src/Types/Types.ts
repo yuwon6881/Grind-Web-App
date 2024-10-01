@@ -120,6 +120,15 @@ type WorkoutSet = {
   Personal_Record: PersonalRecord | null;
 };
 
+type WorkoutSetWithWorkoutDate = {
+  weight: number;
+  reps: number;
+  volume: number;
+  Workout: {
+    start_date: string;
+  };
+};
+
 export type Workout = {
   id: string;
   start_date: string;
@@ -140,6 +149,7 @@ export type SingleCustomExercise = {
   exerciseType: string;
   Custom_Exercise_Muscle: ExerciseMuscle[];
   Custom_Muscle_Custom_Exercise: ExerciseCustomMuscle[];
+  Workout_Sets: WorkoutSetWithWorkoutDate[];
 };
 
 export type SingleExercise = {
@@ -148,4 +158,5 @@ export type SingleExercise = {
   image: string | null;
   exerciseType: string;
   Exercise_Muscle: ExerciseMuscle[];
+  Workout_Sets: WorkoutSetWithWorkoutDate[];
 };

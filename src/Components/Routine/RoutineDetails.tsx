@@ -65,7 +65,7 @@ const RoutineDetails = () => {
             weight: set.weight
               ? globalWeightUnit === "KG"
                 ? parseFloat(set.weight as string)
-                : parseFloat(set.weight as string) / 2.20462
+                : parseFloat(set.weight as string) * 2.20462
               : null,
             rpe: set.rpe ? parseFloat(set.rpe as string) : null,
             index: index + 1,
@@ -144,7 +144,7 @@ const RoutineDetails = () => {
         />
       </div>
       <dialog id="ss_exercise_modal" className="modal">
-        <div className="modal-box overflow-hidden rounded-3xl p-0">
+        <div className="modal-box overflow-hidden rounded p-0">
           <ExerciseCard
             onExerciseClick={(exercise: ExerciseInfo): void => {
               // Create a unique ID for each exercise
