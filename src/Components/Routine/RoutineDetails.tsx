@@ -65,7 +65,7 @@ const RoutineDetails = () => {
             weight: set.weight
               ? globalWeightUnit === "KG"
                 ? parseFloat(set.weight as string)
-                : parseFloat(set.weight as string) * 2.20462
+                : parseFloat(set.weight as string) / 2.20462
               : null,
             rpe: set.rpe ? parseFloat(set.rpe as string) : null,
             index: index + 1,

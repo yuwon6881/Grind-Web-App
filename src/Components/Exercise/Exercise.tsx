@@ -87,6 +87,8 @@ const Exercise: React.FC = () => {
               <div className="flex items-center">
                 <IoAlert />
                 Select Exercise To See Statistics.
+              </div>
+              <div className="mt-2 flex justify-center">
                 <button
                   type="button"
                   className="btn btn-accent btn-sm"
@@ -98,7 +100,7 @@ const Exercise: React.FC = () => {
                     )?.showModal()
                   }
                 >
-                  Exercise
+                  Exercises
                 </button>
               </div>
             </div>
@@ -206,18 +208,31 @@ const exerciseStatistics = (
                           ...exerciseData.Custom_Muscle_Custom_Exercise.filter(
                             (muscle) => muscle.muscleType === "SECONDARY",
                           ),
-                        ]
-                          .map((muscle) =>
-                            isExerciseMuscle(muscle)
-                              ? muscle.Muscle.name
-                              : muscle.muscle.name,
-                          )
-                          .join(", ")
+                        ].length === 0
+                        ? "-"
+                        : [
+                            ...exerciseData.Custom_Exercise_Muscle.filter(
+                              (muscle) => muscle.muscleType === "SECONDARY",
+                            ),
+                            ...exerciseData.Custom_Muscle_Custom_Exercise.filter(
+                              (muscle) => muscle.muscleType === "SECONDARY",
+                            ),
+                          ]
+                            .map((muscle) =>
+                              isExerciseMuscle(muscle)
+                                ? muscle.Muscle.name
+                                : muscle.muscle.name,
+                            )
+                            .join(", ")
                       : exerciseData.Exercise_Muscle.filter(
-                          (muscle) => muscle.muscleType === "SECONDARY",
-                        )
-                          .map((muscle) => muscle.Muscle.name)
-                          .join(", ")}
+                            (muscle) => muscle.muscleType === "SECONDARY",
+                          ).length === 0
+                        ? "None"
+                        : exerciseData.Exercise_Muscle.filter(
+                            (muscle) => muscle.muscleType === "SECONDARY",
+                          )
+                            .map((muscle) => muscle.Muscle.name)
+                            .join(", ")}
                   </span>
                 </div>
               </div>

@@ -430,8 +430,9 @@ const CustomExerciseList: React.FC<{
   };
 
   const deleteAlert = (id: string) => {
+    const dialogID = `deleteAlert-${id}`;
     return (
-      <dialog id="deleteAlert" className="modal">
+      <dialog id={dialogID} className="modal">
         <div className="modal-box pb-2">
           <p className="text-center text-lg font-semibold">
             Confirm Delete Exercise?
@@ -488,7 +489,9 @@ const CustomExerciseList: React.FC<{
               className="text-2xl text-red-600"
               onClick={() => {
                 (
-                  document.getElementById("deleteAlert") as HTMLDialogElement
+                  document.getElementById(
+                    `deleteAlert-${id}`,
+                  ) as HTMLDialogElement
                 ).showModal();
               }}
             />
