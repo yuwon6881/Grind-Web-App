@@ -29,6 +29,10 @@ const App: React.FC = () => {
                 element={<AppLayout component="routine" />}
               />
               <Route
+                path="/routine/:id"
+                element={<AppLayout component="routine" />}
+              />
+              <Route
                 path="/exercises"
                 element={<AppLayout component="exercises" />}
               />

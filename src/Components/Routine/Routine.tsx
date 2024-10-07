@@ -2,6 +2,7 @@ import React from "react";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
 import { deleteRoutine } from "../../services/Fetchs";
+import { Link } from "react-router-dom";
 
 const routine: React.FC<{
   name: string;
@@ -19,9 +20,13 @@ const routine: React.FC<{
             </div>
             <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
               <li>
-                <button onClick={handleClick} className="text-blue-600">
+                <Link
+                  to={`/routine/${id}`}
+                  className="text-blue-600"
+                  onClick={handleClick}
+                >
                   Edit
-                </button>
+                </Link>
               </li>
               <li>
                 <button

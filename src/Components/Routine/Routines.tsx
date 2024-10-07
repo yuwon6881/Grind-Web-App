@@ -156,7 +156,7 @@ const Routines = () => {
 
       {/* Add Folder Modal */}
       <dialog id="addFolderModal" className="modal">
-        <div className="modal-box">
+        <div className="modal-box rounded-lg border border-accent">
           <h3 className="text-lg font-bold">Add Folder</h3>
           <form
             className="mt-3 flex flex-col items-center"
@@ -170,7 +170,7 @@ const Routines = () => {
               onChange={(e) => setFolderName(e.target.value)}
               required
             />
-            <button className="btn mt-3 w-20">Create</button>
+            <button className="btn btn-accent mt-3 w-20">Create</button>
           </form>
         </div>
         <form method="dialog" className="modal-backdrop">

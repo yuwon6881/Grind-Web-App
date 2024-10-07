@@ -2,8 +2,8 @@ import React from "react";
 import ExerciseCard from "../Exercise/ExerciseCard";
 import { BiLeftArrowAlt, BiSave, BiTrash } from "react-icons/bi";
 import { IoAlert } from "react-icons/io5";
-import { Link } from "react-router-dom";
-import { ExerciseInfo, ExerciseSet } from "../../Types/Types";
+import { Link, useParams } from "react-router-dom";
+import { ExerciseInfo, ExerciseSet, SuperSet } from "../../Types/Types";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
 import { v4 as uuidv4 } from "uuid";
@@ -17,8 +17,10 @@ import { useNavigate } from "react-router-dom";
 const RoutineDetails = () => {
   const [exercises, setExercises] = React.useState<ExerciseInfo[]>([]);
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
+  const [superset, setSuperset] = React.useState<SuperSet[]>([]);
   const [routineName, setRoutineName] = React.useState("");
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
+  const { id } = useParams();
   const navigate = useNavigate();
 
   // Retrieve default folder id
@@ -100,6 +102,35 @@ const RoutineDetails = () => {
 
       if (!routineExerciseResponse.ok) {
         const error = await routineExerciseResponse.json();
+        throw new Error(error.message);
+      }
+
+      const formatedSuperset = superset.map((exercise) => ({
+        exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
+        custom_exercise_id: exercise.custom
+          ? exercise.id.split("@")[0]
+          : undefined,
+        routine_uuid: exercise.id.split("@")[1],
+        routine_id: routineData.data.id,
+      }));
+
+      const routineSuperSetResponse = await fetch(
+        config.API_URL + `/api/routine/${routineData.data.id}/superset`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            routine_id: routineData.data.id,
+            superset: formatedSuperset,
+          }),
+        },
+      );
+
+      if (!routineSuperSetResponse.ok) {
+        const error = await routineSuperSetResponse.json();
         throw new Error(error.message);
       }
 
@@ -185,6 +216,27 @@ const RoutineDetails = () => {
           <button>close</button>
         </form>
       </dialog>
+      <dialog id="superset_dialog" className="modal">
+        <div className="modal-box pb-2">
+          <p className="text-center text-lg font-semibold">
+            Choose SuperSet Exercise
+          </p>
+          <div className="mt-2 flex flex-col gap-3">
+            {exercises.map((exercise, index) => (
+              <SuperSetExercise
+                key={index}
+                exercise={exercise}
+                index={index}
+                superset={superset}
+                setSuperset={setSuperset}
+              />
+            ))}
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
       <div className="col-span-3 md:col-span-2">
         <form className="mt-2 flex flex-col gap-2" onSubmit={handleSubmit}>
           <div className="flex justify-between">
@@ -253,6 +305,7 @@ const RoutineDetails = () => {
                     setExercises={setExercises}
                     exerciseSets={exerciseSets}
                     setExerciseSets={setExerciseSets}
+                    superset={superset}
                   />
                 </div>
               ))}
@@ -279,6 +332,35 @@ const RoutineDetails = () => {
   );
 };
 
+const SuperSetExercise: React.FC<{
+  index: number;
+  setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>;
+  superset: SuperSet[];
+  exercise: ExerciseInfo;
+}> = ({ index, setSuperset, superset, exercise }) => {
+  const existInSuperset = superset.find((ss) => ss.id === exercise.id);
+  return (
+    <button
+      key={index}
+      className="btn btn-outline hover:btn-accent"
+      onClick={() => {
+        if (existInSuperset) {
+          setSuperset(superset.filter((ss) => ss.id !== exercise.id));
+        } else {
+          setSuperset([
+            ...superset,
+            { id: exercise.id, custom: exercise.custom },
+          ]);
+        }
+        handleClick();
+      }}
+    >
+      {exercise.name}{" "}
+      <div className="text-blue-600">{existInSuperset ? "✓" : null}</div>
+    </button>
+  );
+};
+
 const Exercise: React.FC<{
   exercise: ExerciseInfo;
   index: number;
@@ -286,6 +368,7 @@ const Exercise: React.FC<{
   setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>;
   exerciseSets: ExerciseSet[];
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
+  superset: SuperSet[];
 }> = ({
   exercise,
   index,
@@ -293,6 +376,7 @@ const Exercise: React.FC<{
   setExercises,
   exerciseSets,
   setExerciseSets,
+  superset,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -336,21 +420,37 @@ const Exercise: React.FC<{
     <div className="card-body">
       <div className="flex flex-col gap-2">
         <div className="flex justify-between">
-          {exercise.name}
+          <div className="flex items-center gap-3">
+            {exercise.name}
+            {superset.find((ss) => ss.id === exercise.id) && (
+              <div className="rounded-md bg-accent px-2 py-1 font-semibold">
+                Superset
+              </div>
+            )}
+          </div>
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button">
               <HiDotsVertical />
             </div>
             <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
-              <li>
-                <button
-                  type="button"
-                  onClick={handleClick}
-                  className="text-blue-600"
-                >
-                  Superset
-                </button>
-              </li>
+              {exercises.length > 1 && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      (
+                        document.getElementById(
+                          "superset_dialog",
+                        ) as HTMLDialogElement
+                      )?.showModal();
+                      handleClick();
+                    }}
+                    className="text-blue-600"
+                  >
+                    Superset
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   type="button"

@@ -160,3 +160,8 @@ export type SingleExercise = {
   Exercise_Muscle: ExerciseMuscle[];
   Workout_Sets: WorkoutSetWithWorkoutDate[];
 };
+
+export type SuperSet = {
+  id: string;
+  custom: boolean;
+};
