@@ -80,6 +80,38 @@ const Routines = () => {
               {folderData.map(
                 (folder: { name: string; index: number; id: string }) => (
                   <div key={folder.id} className="mt-3 flex flex-col gap-2">
+                    <dialog id={`dialog-${folder.id}`} className="modal">
+                      <div className="modal-box pb-2">
+                        <p className="text-center text-lg font-semibold">
+                          Confirm Delete Folder?
+                        </p>
+                        <form
+                          method="dialog"
+                          className="flex justify-center gap-10 py-4"
+                        >
+                          <div className="flex gap-3">
+                            <button className="btn btn-accent text-accent-content">
+                              Cancel
+                            </button>
+                            <button
+                              className="btn btn-error text-error-content"
+                              onClick={() => {
+                                deleteFolder(folder.id).then(() => {
+                                  handleClick();
+                                  folderRefetch();
+                                });
+                                handleClick();
+                              }}
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                      <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                      </form>
+                    </dialog>
                     <div className="flex justify-between">
                       {folder.index != -1 && (
                         <>
@@ -92,11 +124,11 @@ const Routines = () => {
                               <li>
                                 <button
                                   onClick={() => {
-                                    deleteFolder(folder.id).then(() => {
-                                      handleClick();
-                                      folderRefetch();
-                                    });
-                                    handleClick();
+                                    (
+                                      document.getElementById(
+                                        `dialog-${folder.id}`,
+                                      ) as HTMLDialogElement
+                                    ).showModal();
                                   }}
                                   className="text-red-600"
                                 >
@@ -119,6 +151,7 @@ const Routines = () => {
                         )
                         .map(
                           (routine: {
+                            folder_id: string;
                             name: string;
                             index: number;
                             id: string;
@@ -127,6 +160,8 @@ const Routines = () => {
                               key={routine.id}
                               name={routine.name}
                               id={routine.id}
+                              routineFolderID={routine.folder_id}
+                              folders={folderData}
                               routineRefetch={routineRefetch}
                             />
                           ),

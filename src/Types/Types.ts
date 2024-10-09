@@ -165,3 +165,9 @@ export type SuperSet = {
   id: string;
   custom: boolean;
 };
+
+export type folders = {
+  name: string;
+  index: number;
+  id: string;
+};

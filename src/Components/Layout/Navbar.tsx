@@ -119,22 +119,36 @@ const Navbar: React.FC = () => {
             </button>
             <ul className="menu dropdown-content z-[1] w-52 bg-base-100 p-2 shadow">
               <li>
-                <Link className="link no-underline" to="/routines">
+                <Link
+                  className="link no-underline"
+                  onClick={handleClick}
+                  to="/routines"
+                >
                   Routines
                 </Link>
               </li>
               <li>
-                <Link className="link no-underline" to="/">
+                <Link
+                  className="link no-underline"
+                  onClick={handleClick}
+                  to="/"
+                >
                   Statistics
                 </Link>
               </li>
               <li>
-                <Link className="link no-underline" to="/exercises">
+                <Link
+                  className="link no-underline"
+                  onClick={handleClick}
+                  to="/exercises"
+                >
                   Exercises
                 </Link>
               </li>
               <li>
-                <Link to="/settings">Setting</Link>
+                <Link to="/settings" onClick={handleClick}>
+                  Setting
+                </Link>
               </li>
               <li>
                 <button onClick={signOut}>Sign Out</button>
