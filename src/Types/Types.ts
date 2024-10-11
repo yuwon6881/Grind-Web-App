@@ -171,3 +171,10 @@ export type folders = {
   index: number;
   id: string;
 };
+
+export type routine = {
+  folder_id: string;
+  name: string;
+  id: string;
+  index: number;
+};

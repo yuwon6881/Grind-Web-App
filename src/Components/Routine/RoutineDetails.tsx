@@ -105,7 +105,7 @@ const RoutineDetails = () => {
         throw new Error(error.message);
       }
 
-      const formatedSuperset = superset.map((exercise) => ({
+      const formatedSuperset = superset?.map((exercise) => ({
         exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
         custom_exercise_id: exercise.custom
           ? exercise.id.split("@")[0]
@@ -114,29 +114,32 @@ const RoutineDetails = () => {
         routine_id: routineData.data.id,
       }));
 
-      const routineSuperSetResponse = await fetch(
-        config.API_URL + `/api/routine/${routineData.data.id}/superset`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
+      if (formatedSuperset.length !== 0) {
+        const routineSuperSetResponse = await fetch(
+          config.API_URL + `/api/routine/${routineData.data.id}/superset`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              routine_id: routineData.data.id,
+              superset: formatedSuperset,
+            }),
           },
-          body: JSON.stringify({
-            routine_id: routineData.data.id,
-            superset: formatedSuperset,
-          }),
-        },
-      );
+        );
 
-      if (!routineSuperSetResponse.ok) {
-        const error = await routineSuperSetResponse.json();
-        throw new Error(error.message);
+        if (!routineSuperSetResponse.ok) {
+          const error = await routineSuperSetResponse.json();
+          throw new Error(error.message);
+        }
       }
 
       navigate("/routines");
     } catch (error: unknown) {
       if (error instanceof Error) {
+        console.error(error.message);
         throw new Error(error.message);
       }
     }

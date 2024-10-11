@@ -12,7 +12,8 @@ const routine: React.FC<{
   routineRefetch: () => void;
   routineFolderID: string;
   folders: folders[];
-}> = ({ name, id, routineRefetch, folders, routineFolderID }) => {
+  routineIndex: { id: string; index: number; folder_id: string }[];
+}> = ({ name, id, routineRefetch, folders, routineFolderID, routineIndex }) => {
   return (
     <>
       <dialog id={`dialog-${id}`} className="modal">
@@ -29,6 +30,10 @@ const routine: React.FC<{
                 className="btn btn-error text-error-content"
                 onClick={() => {
                   deleteRoutine(id).then(() => {
+                    routineIndex.splice(
+                      routineIndex.findIndex((routine) => routine.id === id),
+                      1,
+                    );
                     handleClick();
                     routineRefetch();
                   });
