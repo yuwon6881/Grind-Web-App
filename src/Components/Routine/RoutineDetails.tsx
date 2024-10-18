@@ -1,15 +1,26 @@
 import React from "react";
 import ExerciseCard from "../Exercise/ExerciseCard";
-import { BiLeftArrowAlt, BiSave, BiTrash } from "react-icons/bi";
+import {
+  BiDownArrow,
+  BiLeftArrowAlt,
+  BiSave,
+  BiTrash,
+  BiUpArrow,
+} from "react-icons/bi";
 import { IoAlert } from "react-icons/io5";
 import { Link, useParams } from "react-router-dom";
-import { ExerciseInfo, ExerciseSet, SuperSet } from "../../Types/Types";
+import {
+  ExerciseInfo,
+  ExerciseSet,
+  RoutineWithInfo,
+  SuperSet,
+} from "../../Types/Types";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
 import { v4 as uuidv4 } from "uuid";
 import config from "../../config";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDefaultFolder } from "../../services/Fetchs";
+import { fetchDefaultFolder, fetchRoutine } from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
 import { WeightUnitContext } from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +33,23 @@ const RoutineDetails = () => {
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { data: routineData }: { data: RoutineWithInfo | undefined } = useQuery(
+    {
+      queryKey: ["routine", id],
+      queryFn: () => fetchRoutine(id!),
+      enabled: !!id,
+    },
+  );
+
+  displayRoutine(
+    id,
+    setExercises,
+    setExerciseSets,
+    setSuperset,
+    setRoutineName,
+    routineData,
+  );
 
   // Retrieve default folder id
   const { data, isError } = useQuery({
@@ -38,19 +66,44 @@ const RoutineDetails = () => {
   ): Promise<void> {
     e.preventDefault();
 
-    // Create routine
+    let routineResponse: Response;
     try {
-      const routineResponse = await fetch(
-        config.API_URL + `/api/folder/${data}/routine`,
-        {
-          method: "POST",
+      if (id) {
+        const deleteRoutineExercisesResponse = await fetch(
+          config.API_URL + `/api/routine/${id}/exercises`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          },
+        );
+
+        if (!deleteRoutineExercisesResponse.ok) {
+          const error = await deleteRoutineExercisesResponse.json();
+          throw new Error(error.message);
+        }
+
+        routineResponse = await fetch(config.API_URL + `/api/routine/${id}`, {
+          method: "PUT",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ name: routineName }),
-        },
-      );
+        });
+      } else {
+        // Create routine
+        routineResponse = await fetch(
+          config.API_URL + `/api/folder/${data}/routine`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: routineName }),
+          },
+        );
+      }
 
       if (!routineResponse.ok) {
         const error = await routineResponse.json();
@@ -59,7 +112,7 @@ const RoutineDetails = () => {
 
       const routineData = await routineResponse.json();
 
-      const formattedExercises = exercises.map((exercise, index) => {
+      const formattedExercises = exercises.map((exercise) => {
         const sets = exerciseSets
           .filter((set) => set.id === exercise.id)
           .map((set, index) => ({
@@ -81,7 +134,7 @@ const RoutineDetails = () => {
             ? exercise.id.split("@")[0]
             : undefined,
           routine_uuid: exercise.id.split("@")[1],
-          index: index + 1,
+          index: exercise.index,
           rest_timer: exercise.restTime ? parseFloat(exercise.restTime) : null,
           note: exercise.note,
           sets,
@@ -146,6 +199,7 @@ const RoutineDetails = () => {
   }
   return (
     <div className="grid h-full grid-cols-3 gap-10">
+      {move_dialog(exercises, setExercises)}
       <div className="hidden md:block">
         <ExerciseCard
           onExerciseClick={(exercise: ExerciseInfo): void => {
@@ -160,6 +214,7 @@ const RoutineDetails = () => {
                 restTime: exercise.restTime,
                 note: exercise.note,
                 custom: exercise.custom,
+                index: exercises.length + 1,
               },
             ]);
 
@@ -167,7 +222,6 @@ const RoutineDetails = () => {
               ...exerciseSets,
               {
                 id: exerciseID,
-                sets: "",
                 reps: "",
                 weight: "",
                 set_type: "NORMAL",
@@ -192,6 +246,7 @@ const RoutineDetails = () => {
                   restTime: exercise.restTime,
                   note: exercise.note,
                   custom: exercise.custom,
+                  index: exercises.length + 1,
                 },
               ]);
 
@@ -199,7 +254,6 @@ const RoutineDetails = () => {
                 ...exerciseSets,
                 {
                   id: exerciseID,
-                  sets: "",
                   reps: "",
                   weight: "",
                   set_type: "NORMAL",
@@ -295,23 +349,25 @@ const RoutineDetails = () => {
             </>
           ) : (
             <>
-              {exercises.map((exercise, index) => (
-                <div
-                  key={`${exercise.id}-${index}`}
-                  id={`id${exercise.id}-${index}`}
-                  className="card card-compact flex flex-col gap-3 border border-accent"
-                >
-                  <Exercise
-                    exercise={exercise}
-                    index={index}
-                    exercises={exercises}
-                    setExercises={setExercises}
-                    exerciseSets={exerciseSets}
-                    setExerciseSets={setExerciseSets}
-                    superset={superset}
-                  />
-                </div>
-              ))}
+              {exercises
+                .sort((a, b) => a.index - b.index)
+                .map((exercise, index) => (
+                  <div
+                    key={`${exercise.id}-${index}`}
+                    id={`id${exercise.id}-${index}`}
+                    className="card card-compact flex flex-col gap-3 border border-accent"
+                  >
+                    <Exercise
+                      exercise={exercise}
+                      index={index}
+                      exercises={exercises}
+                      setExercises={setExercises}
+                      exerciseSets={exerciseSets}
+                      setExerciseSets={setExerciseSets}
+                      superset={superset}
+                    />
+                  </div>
+                ))}
               <div className="mt-2 flex justify-center md:hidden">
                 <button
                   type="button"
@@ -390,7 +446,6 @@ const Exercise: React.FC<{
   function addSet(id: string): void {
     const newSet: ExerciseSet = {
       id: id,
-      sets: "",
       reps: "",
       weight: "",
       rpe: "",
@@ -437,22 +492,39 @@ const Exercise: React.FC<{
             </div>
             <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
               {exercises.length > 1 && (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      (
-                        document.getElementById(
-                          "superset_dialog",
-                        ) as HTMLDialogElement
-                      )?.showModal();
-                      handleClick();
-                    }}
-                    className="text-blue-600"
-                  >
-                    Superset
-                  </button>
-                </li>
+                <>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        (
+                          document.getElementById(
+                            "superset_dialog",
+                          ) as HTMLDialogElement
+                        )?.showModal();
+                        handleClick();
+                      }}
+                      className="text-blue-600"
+                    >
+                      Superset
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        (
+                          document.getElementById(
+                            `move_dialog`,
+                          ) as HTMLDialogElement
+                        ).showModal();
+                      }}
+                      className="text-yellow-500"
+                    >
+                      Arrange Exercise
+                    </button>
+                  </li>
+                </>
               )}
               <li>
                 <button
@@ -486,12 +558,12 @@ const Exercise: React.FC<{
         >
           <option value="0">No Rest</option>
           <option value="0.15">15s</option>
-          <option value="0.30">30s</option>
+          <option value="0.3">30s</option>
           <option value="0.45">45s</option>
           <option value="1">1m</option>
-          <option value="1.50">1m30s</option>
+          <option value="1.5">1m30s</option>
           <option value="2">2m</option>
-          <option value="2.50">2m30s</option>
+          <option value="2.5">2m30s</option>
           <option value="3">3m</option>
           <option value="3.5">3m30s</option>
           <option value="4">4m</option>
@@ -541,7 +613,13 @@ const Sets: React.FC<{
   function updateSet(
     setIndex: number,
     updateType: "weight" | "rpe" | "reps" | "set_type",
-    newValue: number | "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP",
+    newValue:
+      | number
+      | "NORMAL"
+      | "DROPSET"
+      | "LONG_LENGTH_PARTIAL"
+      | "WARMUP"
+      | string,
   ): void {
     setExerciseSets((sets) => {
       let filteredSets = sets.filter((set) => set.id === exercise.id);
@@ -611,10 +689,12 @@ const Sets: React.FC<{
                 className="input input-sm input-accent max-w-20"
                 value={set.weight}
                 onChange={(e) => {
-                  const newWeight =
-                    e.target.valueAsNumber > 1000
-                      ? 1000
-                      : e.target.valueAsNumber;
+                  let newWeight: number | string = e.target.valueAsNumber;
+                  if (isNaN(newWeight)) {
+                    newWeight = "";
+                  } else if (newWeight > 1000) {
+                    newWeight = 1000;
+                  }
 
                   updateSet(setIndex, "weight", newWeight);
                 }}
@@ -628,8 +708,12 @@ const Sets: React.FC<{
                 className="input input-sm input-accent max-w-20"
                 value={set.reps}
                 onChange={(e) => {
-                  const newReps =
-                    e.target.valueAsNumber > 100 ? 100 : e.target.valueAsNumber;
+                  let newReps: number | string = e.target.valueAsNumber;
+                  if (isNaN(newReps)) {
+                    newReps = "";
+                  } else if (newReps > 100) {
+                    newReps = 100;
+                  }
                   updateSet(setIndex, "reps", newReps);
                 }}
               />
@@ -642,14 +726,18 @@ const Sets: React.FC<{
                 className="input input-sm input-accent max-w-10"
                 value={set.rpe}
                 onChange={(e) => {
-                  const newRpe =
-                    e.target.valueAsNumber > 10 ? 10 : e.target.valueAsNumber;
+                  let newRpe: number | string = e.target.valueAsNumber;
+                  if (isNaN(newRpe)) {
+                    newRpe = "";
+                  } else if (newRpe > 10) {
+                    newRpe = 10;
+                  }
                   updateSet(setIndex, "rpe", newRpe);
                 }}
               />
             </div>
             <div
-              className={`flex items-center ${setIndex === 0 ? "invisible" : null}`}
+              className={`flex items-end pb-2 ${setIndex === 0 ? "invisible" : null}`}
             >
               <button
                 type="button"
@@ -664,4 +752,176 @@ const Sets: React.FC<{
   );
 };
 
+const displayRoutine = async (
+  id: string | undefined,
+  setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
+  setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>,
+  setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>,
+  setRoutineName: React.Dispatch<React.SetStateAction<string>>,
+  data: RoutineWithInfo | undefined,
+) => {
+  React.useEffect(() => {
+    if (!data) return;
+
+    const newExercises = [
+      ...data.Routine_Exercise.map((exercise) => ({
+        name: exercise.Exercise.name,
+        id: exercise.exercise_id + "@" + exercise.routine_uuid,
+        restTime: exercise.rest_timer.toString(),
+        note: exercise.note,
+        custom: false,
+        index: exercise.index,
+      })),
+      ...data.Routine_Custom_Exercise.map((customExercise) => ({
+        name: customExercise.Custom_Exercise.name,
+        id:
+          customExercise.custom_exercise_id + "@" + customExercise.routine_uuid,
+        restTime: customExercise.rest_timer.toString(),
+        note: customExercise.note,
+        custom: true,
+        index: customExercise.index,
+      })),
+    ];
+
+    const supersetData = data.Routine_Superset.map((superset) => {
+      const customExercises = superset.RoutineSuperset_CustomExercise.map(
+        (exercise) => {
+          const exercise_id = data.Routine_Custom_Exercise.find(
+            (ex) => ex.routine_uuid === exercise.routine_uuid,
+          )?.custom_exercise_id;
+
+          return {
+            id: exercise_id + "@" + exercise.routine_uuid,
+            custom: true,
+          };
+        },
+      );
+
+      const exercises = superset.RoutineSuperset_Exercise.map((exercise) => {
+        const exercise_id = data.Routine_Exercise.find(
+          (ex) => ex.routine_uuid === exercise.routine_uuid,
+        )?.exercise_id;
+
+        return {
+          id: exercise_id + "@" + exercise.routine_uuid,
+          custom: false,
+        };
+      });
+
+      return [...customExercises, ...exercises];
+    }).flat();
+
+    const newExerciseSets = data.Routine_Set.map((set) => ({
+      id: `${set.exercise_id ?? set.custom_exercise_id}@${set.set_uuid}`,
+      reps: set.reps ? set.reps.toString() : "",
+      weight: set.weight ? set.weight.toString() : "",
+      rpe: set.rpe ? set.rpe.toString() : "",
+      set_type: set.set_type as
+        | "NORMAL"
+        | "DROPSET"
+        | "LONG_LENGTH_PARTIAL"
+        | "WARMUP",
+    }));
+
+    setExerciseSets(newExerciseSets);
+    setExercises(newExercises);
+    setRoutineName(data.name);
+    setSuperset(supersetData);
+  }, [data]);
+};
+
+const move_dialog = (
+  exercises: ExerciseInfo[],
+  setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
+) => {
+  const moveUpExercise = (
+    exercises: ExerciseInfo[],
+    setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
+    currentExercise: ExerciseInfo,
+  ) => {
+    // Find the index of the exercise
+    const findExercise = exercises.find(
+      (exercise) => exercise.id === currentExercise.id,
+    );
+    if (!findExercise) return;
+    if (findExercise.index === 1) return;
+
+    setExercises((prev) => {
+      return prev.map((exercise) => {
+        if (exercise.index === currentExercise.index) {
+          return { ...exercise, index: exercise.index - 1 };
+        } else if (exercise.index === currentExercise.index - 1) {
+          return { ...exercise, index: exercise.index + 1 };
+        }
+        return exercise;
+      });
+    });
+  };
+
+  const moveDownExercise = (
+    exercises: ExerciseInfo[],
+    setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
+    currentExercise: ExerciseInfo,
+  ) => {
+    // Find the index of the exercise
+    const findExercise = exercises.find(
+      (exercise) => exercise.id === currentExercise.id,
+    );
+    if (!findExercise) return;
+    if (findExercise.index === exercises.length) return;
+
+    setExercises((prev) => {
+      return prev.map((exercise) => {
+        if (exercise.index === currentExercise.index) {
+          return { ...exercise, index: exercise.index + 1 };
+        } else if (exercise.index === currentExercise.index + 1) {
+          return { ...exercise, index: exercise.index - 1 };
+        }
+        return exercise;
+      });
+    });
+  };
+  return (
+    <dialog id="move_dialog" className="modal">
+      <div className="modal-box pb-2">
+        <p className="text-center text-lg font-semibold">Arrange Exercises</p>
+        <div className="mt-2 flex flex-col gap-3">
+          {exercises
+            .sort((a, b) => a.index - b.index)
+            .map((exercise) => {
+              return (
+                <div
+                  key={exercise.id}
+                  className="flex justify-between rounded-lg border border-accent p-4"
+                >
+                  <p>{exercise.name}</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        moveUpExercise(exercises, setExercises, exercise);
+                        handleClick();
+                      }}
+                    >
+                      <BiUpArrow />
+                    </button>
+                    <button
+                      onClick={() => {
+                        moveDownExercise(exercises, setExercises, exercise);
+                        handleClick();
+                      }}
+                    >
+                      <BiDownArrow />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+};
 export default RoutineDetails;

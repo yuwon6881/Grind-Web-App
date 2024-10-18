@@ -59,7 +59,7 @@ const Routines = () => {
   useEffect(() => {
     routineData
       ?.filter((routine: routine) => routine.folder_id === arrangeFolderID)
-      .sort((a: { index: number }, b: { index: number }) => a.index - b.index) // Sort by id, you can change this to routine.index if needed
+      .sort((a: { index: number }, b: { index: number }) => a.index - b.index)
       .forEach((routine: routine, index: number) => {
         // Check if routine index already contains the routine id
         if (!routineIndex.some((index) => index.id === routine.id)) {

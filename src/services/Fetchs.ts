@@ -343,3 +343,22 @@ export const fetchCustomExercise = async (id: string) => {
     }
   }
 };
+
+export const fetchRoutine = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/routine/" + id, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch routine, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};

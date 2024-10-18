@@ -111,20 +111,22 @@ const routine: React.FC<{
                     Delete
                   </button>
                 </li>
-                <li>
-                  <button
-                    className="text-yellow-500"
-                    onClick={() => {
-                      (
-                        document.getElementById(
-                          `move_dialog-${id}`,
-                        ) as HTMLDialogElement
-                      ).showModal();
-                    }}
-                  >
-                    Move to
-                  </button>
-                </li>
+                {folders.length > 1 && (
+                  <li>
+                    <button
+                      className="text-yellow-500"
+                      onClick={() => {
+                        (
+                          document.getElementById(
+                            `move_dialog-${id}`,
+                          ) as HTMLDialogElement
+                        ).showModal();
+                      }}
+                    >
+                      Move to
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           </div>

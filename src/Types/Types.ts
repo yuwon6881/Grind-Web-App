@@ -54,11 +54,11 @@ export type ExerciseInfo = {
   restTime: string;
   note: string;
   id: string;
+  index: number;
 };
 
 export type ExerciseSet = {
   id: string;
-  sets: number | string;
   reps: number | string;
   weight: number | string;
   rpe: number | string;
@@ -177,4 +177,71 @@ export type routine = {
   name: string;
   id: string;
   index: number;
+};
+
+export type RoutineExercise = {
+  routine_id: string;
+  exercise_id: string;
+  routine_uuid: string;
+  index: number;
+  rest_timer: number;
+  note: string;
+  Exercise: {
+    name: string;
+  };
+};
+
+export type RoutineCustomExercise = {
+  routine_id: string;
+  custom_exercise_id: string;
+  routine_uuid: string;
+  index: number;
+  rest_timer: number;
+  note: string;
+  Custom_Exercise: {
+    name: string;
+  };
+};
+
+export type RoutineSet = {
+  id: string;
+  weight: number | null;
+  reps: number | null;
+  rpe: number | null;
+  index: number;
+  set_type: string;
+  routine_id: string;
+  exercise_id: string | null;
+  custom_exercise_id: string | null;
+  set_uuid: string;
+};
+
+type RoutineSuperset_Exercise = {
+  id: string;
+  supersets_id: string;
+  routine_uuid: string;
+};
+
+type RoutineSuperset_CustomExercise = {
+  id: string;
+  supersets_id: string;
+  routine_uuid: string;
+};
+
+export type RoutineSuperset = {
+  id: string;
+  routine_id: string;
+  RoutineSuperset_Exercise: RoutineSuperset_Exercise[];
+  RoutineSuperset_CustomExercise: RoutineSuperset_CustomExercise[];
+};
+
+export type RoutineWithInfo = {
+  id: string;
+  name: string;
+  index: number;
+  folder_id: string;
+  Routine_Exercise: RoutineExercise[];
+  Routine_Custom_Exercise: RoutineCustomExercise[];
+  Routine_Set: RoutineSet[];
+  Routine_Superset: RoutineSuperset[];
 };
