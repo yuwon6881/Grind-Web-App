@@ -14,7 +14,10 @@ import Select from "react-select";
 import config from "../../config";
 import { BiTrash } from "react-icons/bi";
 
-const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
+const ExerciseCard: React.FC<ExerciseCardProps> = ({
+  onExerciseClick,
+  className,
+}) => {
   // UseQuery to fetch exercises and muscles
   const { exerciseData, exerciseisLoading, exerciseIsError } = useExercise();
   const {
@@ -117,7 +120,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
 
   return (
     <div
-      className="card sticky top-10 h-full flex-col gap-4 border border-accent p-3"
+      className={`card sticky top-10 h-full flex-col gap-4 border border-accent p-3 ${className}`}
       style={{ height: "85vh" }}
     >
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
@@ -352,6 +355,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                             custom: false,
                             restTime: "0",
                             note: "",
+                            index: 0,
                           })
                         }
                       />
@@ -378,6 +382,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ onExerciseClick }) => {
                             custom: true,
                             restTime: "0",
                             note: "",
+                            index: 0,
                           })
                         }
                         muscle={primaryMuscle}

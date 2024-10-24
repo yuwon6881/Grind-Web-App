@@ -8,10 +8,12 @@ import {
   BiUpArrow,
 } from "react-icons/bi";
 import { IoAlert } from "react-icons/io5";
-import { Link, useParams } from "react-router-dom";
+// eslint-disable-next-line import/named
+import { Link, NavigateFunction, useParams } from "react-router-dom";
 import {
   ExerciseInfo,
   ExerciseSet,
+  InputFieldProps,
   RoutineWithInfo,
   SuperSet,
 } from "../../Types/Types";
@@ -32,7 +34,7 @@ const RoutineDetails = () => {
   const [superset, setSuperset] = React.useState<SuperSet[]>([]);
   const [routineName, setRoutineName] = React.useState("");
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
-  const { id } = useParams();
+  const { id, workout_id } = useParams();
   const navigate = useNavigate();
 
   const { data: routineData }: { data: RoutineWithInfo | undefined } = useQuery(
@@ -43,6 +45,12 @@ const RoutineDetails = () => {
     },
   );
 
+  // Retrieve default folder id
+  const { data, isError } = useQuery({
+    queryKey: ["defaultFolder"],
+    queryFn: fetchDefaultFolder,
+  });
+
   displayRoutine(
     id,
     setExercises,
@@ -52,264 +60,101 @@ const RoutineDetails = () => {
     routineData,
   );
 
-  // Retrieve default folder id
-  const { data, isError } = useQuery({
-    queryKey: ["defaultFolder"],
-    queryFn: fetchDefaultFolder,
-  });
-
   if (isError) {
     return <ErrorMessage />;
   }
 
-  async function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    e.preventDefault();
-
-    let routineResponse: Response;
-    try {
-      if (id) {
-        const deleteRoutineExercisesResponse = await fetch(
-          config.API_URL + `/api/routine/${id}/exercises`,
-          {
-            method: "DELETE",
-            credentials: "include",
-          },
-        );
-
-        if (!deleteRoutineExercisesResponse.ok) {
-          const error = await deleteRoutineExercisesResponse.json();
-          throw new Error(error.message);
-        }
-
-        routineResponse = await fetch(config.API_URL + `/api/routine/${id}`, {
-          method: "PUT",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: routineName }),
-        });
-      } else {
-        // Create routine
-        routineResponse = await fetch(
-          config.API_URL + `/api/folder/${data}/routine`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ name: routineName }),
-          },
-        );
-      }
-
-      if (!routineResponse.ok) {
-        const error = await routineResponse.json();
-        throw new Error(error.message);
-      }
-
-      const routineData = await routineResponse.json();
-
-      const formattedExercises = exercises.map((exercise) => {
-        const sets = exerciseSets
-          .filter((set) => set.id === exercise.id)
-          .map((set, index) => ({
-            reps: set.reps ? parseInt(set.reps as string) : null,
-            weight: set.weight
-              ? globalWeightUnit === "KG"
-                ? parseFloat(set.weight as string)
-                : parseFloat(set.weight as string) / 2.20462
-              : null,
-            rpe: set.rpe ? parseFloat(set.rpe as string) : null,
-            index: index + 1,
-            set_type: set.set_type,
-            set_uuid: exercise.id.split("@")[1],
-          }));
-
-        return {
-          exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
-          custom_exercise_id: exercise.custom
-            ? exercise.id.split("@")[0]
-            : undefined,
-          routine_uuid: exercise.id.split("@")[1],
-          index: exercise.index,
-          rest_timer: exercise.restTime ? parseFloat(exercise.restTime) : null,
-          note: exercise.note,
-          sets,
-        };
-      });
-
-      const routineExerciseResponse = await fetch(
-        config.API_URL + `/api/routine/${routineData.data.id}/exercises`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ exercises: formattedExercises }),
-        },
-      );
-
-      if (!routineExerciseResponse.ok) {
-        const error = await routineExerciseResponse.json();
-        throw new Error(error.message);
-      }
-
-      const formatedSuperset = superset?.map((exercise) => ({
-        exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
-        custom_exercise_id: exercise.custom
-          ? exercise.id.split("@")[0]
-          : undefined,
-        routine_uuid: exercise.id.split("@")[1],
-        routine_id: routineData.data.id,
-      }));
-
-      if (formatedSuperset.length !== 0) {
-        const routineSuperSetResponse = await fetch(
-          config.API_URL + `/api/routine/${routineData.data.id}/superset`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              routine_id: routineData.data.id,
-              superset: formatedSuperset,
-            }),
-          },
-        );
-
-        if (!routineSuperSetResponse.ok) {
-          const error = await routineSuperSetResponse.json();
-          throw new Error(error.message);
-        }
-      }
-
-      navigate("/routines");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(error.message);
-        throw new Error(error.message);
-      }
-    }
-  }
   return (
     <div className="grid h-full grid-cols-3 gap-10">
       {move_dialog(exercises, setExercises)}
-      <div className="hidden md:block">
-        <ExerciseCard
-          onExerciseClick={(exercise: ExerciseInfo): void => {
-            // Create a unique ID for each exercise
-            const exerciseID = exercise.id + "@" + uuidv4();
+      {superset_dialog(exercises, superset, setSuperset)}
+      {smallScreenExerciseDialog(
+        setExercises,
+        exercises,
+        setExerciseSets,
+        exerciseSets,
+      )}
+      <ExerciseCard
+        className="hidden md:block"
+        onExerciseClick={(exercise: ExerciseInfo): void => {
+          // Create a unique ID for each exercise
+          const exerciseID = exercise.id + "@" + uuidv4();
 
-            setExercises([
-              ...exercises,
-              {
-                name: exercise.name,
-                id: exerciseID,
-                restTime: exercise.restTime,
-                note: exercise.note,
-                custom: exercise.custom,
-                index: exercises.length + 1,
-                image: exercise.image,
-              },
-            ]);
+          setExercises([
+            ...exercises,
+            {
+              name: exercise.name,
+              id: exerciseID,
+              restTime: exercise.restTime,
+              note: exercise.note,
+              custom: exercise.custom,
+              index: exercises.length + 1,
+              image: exercise.image,
+            },
+          ]);
 
-            setExerciseSets([
-              ...exerciseSets,
-              {
-                id: exerciseID,
-                reps: "",
-                weight: "",
-                set_type: "NORMAL",
-                rpe: "",
-              },
-            ]);
-          }}
-        />
-      </div>
-      <dialog id="ss_exercise_modal" className="modal">
-        <div className="modal-box overflow-hidden rounded p-0">
-          <ExerciseCard
-            onExerciseClick={(exercise: ExerciseInfo): void => {
-              // Create a unique ID for each exercise
-              const exerciseID = exercise.id + "@" + uuidv4();
-
-              setExercises([
-                ...exercises,
-                {
-                  name: exercise.name,
-                  id: exerciseID,
-                  restTime: exercise.restTime,
-                  note: exercise.note,
-                  custom: exercise.custom,
-                  index: exercises.length + 1,
-                  image: exercise.image,
-                },
-              ]);
-
-              setExerciseSets([
-                ...exerciseSets,
-                {
-                  id: exerciseID,
-                  reps: "",
-                  weight: "",
-                  set_type: "NORMAL",
-                  rpe: "",
-                },
-              ]);
-
-              (
-                document.getElementById(
-                  "ss_exercise_modal",
-                ) as HTMLDialogElement
-              ).close();
-            }}
-          />
-        </div>
-        <form method="dialog" className="modal-backdrop">
-          <button>close</button>
-        </form>
-      </dialog>
-      <dialog id="superset_dialog" className="modal">
-        <div className="modal-box pb-2">
-          <p className="text-center text-lg font-semibold">
-            Choose SuperSet Exercise
-          </p>
-          <div className="mt-2 flex flex-col gap-3">
-            {exercises.map((exercise, index) => (
-              <SuperSetExercise
-                key={index}
-                exercise={exercise}
-                index={index}
-                superset={superset}
-                setSuperset={setSuperset}
-              />
-            ))}
-          </div>
-        </div>
-        <form method="dialog" className="modal-backdrop">
-          <button>close</button>
-        </form>
-      </dialog>
+          setExerciseSets([
+            ...exerciseSets,
+            {
+              id: exerciseID,
+              reps: "",
+              weight: "",
+              set_type: "NORMAL",
+              rpe: "",
+            },
+          ]);
+        }}
+      />
       <div className="col-span-3 md:col-span-2">
-        <form className="mt-2 flex flex-col gap-2" onSubmit={handleSubmit}>
+        <form
+          className="mt-2 flex flex-col gap-2"
+          onSubmit={(e) => {
+            handleSubmit(
+              e,
+              id!,
+              data,
+              routineName,
+              globalWeightUnit!,
+              exercises,
+              exerciseSets,
+              superset,
+              navigate,
+            );
+          }}
+        >
           <div className="flex justify-between">
-            <Link
-              to="/routines"
-              className="flex items-center gap-2 text-lg underline-offset-4 hover:underline"
-            >
-              <BiLeftArrowAlt />
-              Routine
-            </Link>
-            <button className="hover:text-primary">
-              <BiSave className="text-3xl" />
-            </button>
+            {workout_id ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+                className="btn btn-outline btn-error btn-sm"
+              >
+                Cancel
+              </button>
+            ) : (
+              <Link
+                to="/routines"
+                className="flex items-center gap-2 text-lg underline-offset-4 hover:underline"
+              >
+                <BiLeftArrowAlt />
+                Routine
+              </Link>
+            )}
+            {workout_id ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+                className="btn btn-outline btn-success btn-sm"
+              >
+                Finish
+              </button>
+            ) : (
+              <button className="hover:text-primary">
+                <BiSave className="text-3xl" />
+              </button>
+            )}
           </div>
           <input
             type="text"
@@ -368,6 +213,7 @@ const RoutineDetails = () => {
                       exerciseSets={exerciseSets}
                       setExerciseSets={setExerciseSets}
                       superset={superset}
+                      workout_id={workout_id}
                     />
                   </div>
                 ))}
@@ -431,6 +277,7 @@ const Exercise: React.FC<{
   exerciseSets: ExerciseSet[];
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
   superset: SuperSet[];
+  workout_id: string | undefined;
 }> = ({
   exercise,
   index,
@@ -439,6 +286,7 @@ const Exercise: React.FC<{
   exerciseSets,
   setExerciseSets,
   superset,
+  workout_id,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -587,6 +435,7 @@ const Exercise: React.FC<{
         exercise={exercise}
         exerciseSets={exerciseSets}
         setExerciseSets={setExerciseSets}
+        workout_id={workout_id}
       />
       <button
         type="button"
@@ -605,7 +454,8 @@ const Sets: React.FC<{
   exercise: ExerciseInfo;
   exerciseSets: ExerciseSet[];
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
-}> = ({ exercise, exerciseSets, setExerciseSets }) => {
+  workout_id: string | undefined;
+}> = ({ exercise, exerciseSets, setExerciseSets, workout_id }) => {
   function removeSet(id: string): void {
     const [exerciseID, setIndex] = id.split("#");
     setExerciseSets((sets) => {
@@ -693,63 +543,41 @@ const Sets: React.FC<{
                 <option value="LONG_LENGTH_PARTIAL">LLP</option>
               </select>
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <span>Weights</span>
-              <input
-                type="number"
-                max={1000}
-                className="input input-sm input-accent max-w-20"
-                value={set.weight}
-                onChange={(e) => {
-                  let newWeight: number | string = e.target.valueAsNumber;
-                  if (isNaN(newWeight)) {
-                    newWeight = "";
-                  } else if (newWeight > 1000) {
-                    newWeight = 1000;
-                  }
-
-                  updateSet(setIndex, "weight", newWeight);
-                }}
-              />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <span>Reps</span>
-              <input
-                type="number"
-                max={100}
-                className="input input-sm input-accent max-w-20"
-                value={set.reps}
-                onChange={(e) => {
-                  let newReps: number | string = e.target.valueAsNumber;
-                  if (isNaN(newReps)) {
-                    newReps = "";
-                  } else if (newReps > 100) {
-                    newReps = 100;
-                  }
-                  updateSet(setIndex, "reps", newReps);
-                }}
-              />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <span>RPE</span>
-              <input
-                type="number"
-                max={10}
-                className="input input-sm input-accent max-w-10"
-                value={set.rpe}
-                onChange={(e) => {
-                  let newRpe: number | string = e.target.valueAsNumber;
-                  if (isNaN(newRpe)) {
-                    newRpe = "";
-                  } else if (newRpe > 10) {
-                    newRpe = 10;
-                  }
-                  updateSet(setIndex, "rpe", newRpe);
-                }}
-              />
-            </div>
+            <InputField
+              label="Weights"
+              max={1000}
+              value={set.weight}
+              onChange={(newWeight) => updateSet(setIndex, "weight", newWeight)}
+              className="max-w-20"
+            />
+            <InputField
+              label="Reps"
+              max={100}
+              value={set.reps}
+              onChange={(newReps) => updateSet(setIndex, "reps", newReps)}
+              className="max-w-20"
+            />
+            <InputField
+              label="RPE"
+              max={10}
+              value={set.rpe}
+              onChange={(newRpe) => updateSet(setIndex, "rpe", newRpe)}
+              className="max-w-10"
+            />
+            {workout_id && (
+              <div className="flex flex-col items-center gap-1 pb-2">
+                <span>Complete?</span>
+                <div className="form-control">
+                  <input
+                    type="checkbox"
+                    id={`checkbox-${exercise.id}-${setIndex}`}
+                    className="checkbox-accent checkbox rounded"
+                  />
+                </div>
+              </div>
+            )}
             <div
-              className={`flex items-end pb-2 ${setIndex === 0 ? "invisible" : null}`}
+              className={`flex items-end pb-2 ${setIndex === 0 ? "invisible" : ""}`}
             >
               <button
                 type="button"
@@ -761,6 +589,35 @@ const Sets: React.FC<{
           </div>
         ))}
     </>
+  );
+};
+
+const InputField: React.FC<InputFieldProps> = ({
+  label,
+  max,
+  value,
+  onChange,
+  className,
+}) => {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span>{label}</span>
+      <input
+        type="number"
+        max={max}
+        className={`input input-sm input-accent ${className}`}
+        value={value}
+        onChange={(e) => {
+          let newValue: number | string = e.target.valueAsNumber;
+          if (isNaN(newValue)) {
+            newValue = "";
+          } else if (newValue > max) {
+            newValue = max;
+          }
+          onChange(newValue);
+        }}
+      />
+    </div>
   );
 };
 
@@ -937,5 +794,230 @@ const move_dialog = (
       </form>
     </dialog>
   );
+};
+
+const superset_dialog = (
+  exercises: ExerciseInfo[],
+  superset: SuperSet[],
+  setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>,
+) => {
+  return (
+    <dialog id="superset_dialog" className="modal">
+      <div className="modal-box pb-2">
+        <p className="text-center text-lg font-semibold">
+          Choose SuperSet Exercise
+        </p>
+        <div className="mt-2 flex flex-col gap-3">
+          {exercises.map((exercise, index) => (
+            <SuperSetExercise
+              key={index}
+              exercise={exercise}
+              index={index}
+              superset={superset}
+              setSuperset={setSuperset}
+            />
+          ))}
+        </div>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+};
+
+const smallScreenExerciseDialog = (
+  setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
+  exercises: ExerciseInfo[],
+  setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>,
+  exerciseSets: ExerciseSet[],
+) => {
+  return (
+    <dialog id="ss_exercise_modal" className="modal">
+      <ExerciseCard
+        className="modal-box overflow-hidden rounded"
+        onExerciseClick={(exercise: ExerciseInfo): void => {
+          // Create a unique ID for each exercise
+          const exerciseID = exercise.id + "@" + uuidv4();
+
+          setExercises([
+            ...exercises,
+            {
+              name: exercise.name,
+              id: exerciseID,
+              restTime: exercise.restTime,
+              note: exercise.note,
+              custom: exercise.custom,
+              index: exercises.length + 1,
+              image: exercise.image,
+            },
+          ]);
+
+          setExerciseSets([
+            ...exerciseSets,
+            {
+              id: exerciseID,
+              reps: "",
+              weight: "",
+              set_type: "NORMAL",
+              rpe: "",
+            },
+          ]);
+
+          (
+            document.getElementById("ss_exercise_modal") as HTMLDialogElement
+          ).close();
+        }}
+      />
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+};
+
+const handleSubmit = async (
+  e: React.FormEvent<HTMLFormElement>,
+  id: string,
+  data: string,
+  routineName: string,
+  globalWeightUnit: string,
+  exercises: ExerciseInfo[],
+  exerciseSets: ExerciseSet[],
+  superset: SuperSet[],
+  navigate: NavigateFunction,
+): Promise<void> => {
+  e.preventDefault();
+
+  let routineResponse: Response;
+  try {
+    if (id) {
+      const deleteRoutineExercisesResponse = await fetch(
+        config.API_URL + `/api/routine/${id}/exercises`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+
+      if (!deleteRoutineExercisesResponse.ok) {
+        const error = await deleteRoutineExercisesResponse.json();
+        throw new Error(error.message);
+      }
+
+      routineResponse = await fetch(config.API_URL + `/api/routine/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: routineName }),
+      });
+    } else {
+      // Create routine
+      routineResponse = await fetch(
+        config.API_URL + `/api/folder/${data}/routine`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: routineName }),
+        },
+      );
+    }
+
+    if (!routineResponse.ok) {
+      const error = await routineResponse.json();
+      throw new Error(error.message);
+    }
+
+    const routineData = await routineResponse.json();
+
+    const formattedExercises = exercises.map((exercise) => {
+      const sets = exerciseSets
+        .filter((set) => set.id === exercise.id)
+        .map((set, index) => ({
+          reps: set.reps ? parseInt(set.reps as string) : null,
+          weight: set.weight
+            ? globalWeightUnit === "KG"
+              ? parseFloat(set.weight as string)
+              : parseFloat(set.weight as string) / 2.20462
+            : null,
+          rpe: set.rpe ? parseFloat(set.rpe as string) : null,
+          index: index + 1,
+          set_type: set.set_type,
+          set_uuid: exercise.id.split("@")[1],
+        }));
+
+      return {
+        exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
+        custom_exercise_id: exercise.custom
+          ? exercise.id.split("@")[0]
+          : undefined,
+        routine_uuid: exercise.id.split("@")[1],
+        index: exercise.index,
+        rest_timer: exercise.restTime ? parseFloat(exercise.restTime) : null,
+        note: exercise.note,
+        sets,
+      };
+    });
+
+    const routineExerciseResponse = await fetch(
+      config.API_URL + `/api/routine/${routineData.data.id}/exercises`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ exercises: formattedExercises }),
+      },
+    );
+
+    if (!routineExerciseResponse.ok) {
+      const error = await routineExerciseResponse.json();
+      throw new Error(error.message);
+    }
+
+    const formatedSuperset = superset?.map((exercise) => ({
+      exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
+      custom_exercise_id: exercise.custom
+        ? exercise.id.split("@")[0]
+        : undefined,
+      routine_uuid: exercise.id.split("@")[1],
+      routine_id: routineData.data.id,
+    }));
+
+    if (formatedSuperset.length !== 0) {
+      const routineSuperSetResponse = await fetch(
+        config.API_URL + `/api/routine/${routineData.data.id}/superset`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            routine_id: routineData.data.id,
+            superset: formatedSuperset,
+          }),
+        },
+      );
+
+      if (!routineSuperSetResponse.ok) {
+        const error = await routineSuperSetResponse.json();
+        throw new Error(error.message);
+      }
+    }
+
+    navigate("/routines");
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      throw new Error(error.message);
+    }
+  }
 };
 export default RoutineDetails;
