@@ -2,7 +2,7 @@ import React from "react";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
 import { deleteRoutine } from "../../services/Fetchs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { folders } from "../../Types/Types";
 import config from "../../config";
 
@@ -14,6 +14,8 @@ const routine: React.FC<{
   folders: folders[];
   routineIndex: { id: string; index: number; folder_id: string }[];
 }> = ({ name, id, routineRefetch, folders, routineFolderID, routineIndex }) => {
+  const navigate = useNavigate();
+
   return (
     <>
       <dialog id={`dialog-${id}`} className="modal">
@@ -79,27 +81,49 @@ const routine: React.FC<{
         </form>
       </dialog>
 
-      <div className="card border border-accent">
+      <div
+        className="card border border-accent"
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          navigate(`/routineOverview/${id}`);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            // Trigger the click event
+            e.currentTarget.click();
+          }
+        }}
+      >
         <div className="card-body p-4">
           <div className="flex items-center justify-between">
             <h6>{name}</h6>
             <div className="dropdown dropdown-end">
               <div tabIndex={0} role="button">
-                <HiDotsVertical />
+                <HiDotsVertical
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                />
               </div>
               <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
                 <li>
                   <Link
                     to={`/routine/${id}`}
                     className="text-blue-600"
-                    onClick={handleClick}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClick();
+                    }}
                   >
                     Edit
                   </Link>
                 </li>
                 <li>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       (
                         document.getElementById(
                           `dialog-${id}`,
@@ -115,7 +139,8 @@ const routine: React.FC<{
                   <li>
                     <button
                       className="text-yellow-500"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         (
                           document.getElementById(
                             `move_dialog-${id}`,

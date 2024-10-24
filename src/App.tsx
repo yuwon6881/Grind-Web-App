@@ -36,6 +36,10 @@ const App: React.FC = () => {
                 path="/exercises"
                 element={<AppLayout component="exercises" />}
               />
+              <Route
+                path="/routineOverview/:id"
+                element={<AppLayout component="routineOverview" />}
+              />
             </Route>
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Auth path="login" />} />

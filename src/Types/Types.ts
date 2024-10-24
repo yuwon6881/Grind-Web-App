@@ -50,6 +50,7 @@ export type ExerciseCustomMuscle = {
 
 export type ExerciseInfo = {
   name: string;
+  image: string | null;
   custom: boolean;
   restTime: string;
   note: string;
@@ -188,6 +189,7 @@ export type RoutineExercise = {
   note: string;
   Exercise: {
     name: string;
+    image: string | null;
   };
 };
 
@@ -200,6 +202,7 @@ export type RoutineCustomExercise = {
   note: string;
   Custom_Exercise: {
     name: string;
+    image: string | null;
   };
 };
 

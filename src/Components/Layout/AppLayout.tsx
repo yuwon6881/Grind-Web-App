@@ -5,6 +5,7 @@ import Settings from "../Setting/Setting";
 import Routines from "../Routine/Routines";
 import RoutineDetails from "../Routine/RoutineDetails";
 import Exercise from "../Exercise/Exercise";
+import RoutineOverview from "../Routine/RoutineOverview";
 
 const AppLayout: React.FC<{ component: string }> = ({ component }) => {
   let Content;
@@ -24,6 +25,9 @@ const AppLayout: React.FC<{ component: string }> = ({ component }) => {
       break;
     case "exercises":
       Content = <Exercise />;
+      break;
+    case "routineOverview":
+      Content = <RoutineOverview />;
       break;
   }
 

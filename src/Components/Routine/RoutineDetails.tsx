@@ -24,6 +24,7 @@ import { fetchDefaultFolder, fetchRoutine } from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
 import { WeightUnitContext } from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
+import { FaDumbbell } from "react-icons/fa";
 
 const RoutineDetails = () => {
   const [exercises, setExercises] = React.useState<ExerciseInfo[]>([]);
@@ -215,6 +216,7 @@ const RoutineDetails = () => {
                 note: exercise.note,
                 custom: exercise.custom,
                 index: exercises.length + 1,
+                image: exercise.image,
               },
             ]);
 
@@ -247,6 +249,7 @@ const RoutineDetails = () => {
                   note: exercise.note,
                   custom: exercise.custom,
                   index: exercises.length + 1,
+                  image: exercise.image,
                 },
               ]);
 
@@ -479,6 +482,15 @@ const Exercise: React.FC<{
       <div className="flex flex-col gap-2">
         <div className="flex justify-between">
           <div className="flex items-center gap-3">
+            {exercise.image ? (
+              <img
+                src={exercise.image}
+                alt={exercise.name}
+                className="h-10 w-10 rounded-full"
+              />
+            ) : (
+              <FaDumbbell className="h-10 w-10 rounded-full" />
+            )}
             {exercise.name}
             {superset.find((ss) => ss.id === exercise.id) && (
               <div className="rounded-md bg-accent px-2 py-1 font-semibold">
@@ -771,6 +783,7 @@ const displayRoutine = async (
         note: exercise.note,
         custom: false,
         index: exercise.index,
+        image: exercise.Exercise.image,
       })),
       ...data.Routine_Custom_Exercise.map((customExercise) => ({
         name: customExercise.Custom_Exercise.name,
@@ -780,6 +793,7 @@ const displayRoutine = async (
         note: customExercise.note,
         custom: true,
         index: customExercise.index,
+        image: customExercise.Custom_Exercise.image,
       })),
     ];
 
