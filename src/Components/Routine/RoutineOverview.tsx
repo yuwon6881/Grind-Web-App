@@ -1,7 +1,11 @@
 import React from "react";
 // eslint-disable-next-line import/named
 import { NavigateFunction, useNavigate, useParams } from "react-router-dom";
-import { deleteRoutine, fetchRoutine } from "../../services/Fetchs";
+import {
+  createRoutineWorkout,
+  deleteRoutine,
+  fetchRoutine,
+} from "../../services/Fetchs";
 import { useQuery } from "@tanstack/react-query";
 import {
   RoutineCustomExercise,
@@ -25,8 +29,6 @@ const RoutineOverview = () => {
 
   const navigate = useNavigate();
 
-  console.log(data);
-
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorMessage message="Routine Not Found" />;
   return (
@@ -42,7 +44,15 @@ const RoutineOverview = () => {
                   className="btn btn-outline btn-sm"
                   onClick={() => {
                     handleClick();
-                    navigate(`/routine/${id}/start`);
+                    if (id) {
+                      createRoutineWorkout(id, data.name).then((res) => {
+                        if (res) {
+                          navigate(`/routine/${id}/${res.id}`);
+                        } else {
+                          console.log("Failed to create workout");
+                        }
+                      });
+                    }
                   }}
                 >
                   Start Routine
