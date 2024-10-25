@@ -5,6 +5,7 @@ import ProtectedRoutes from "./Routes/ProtectedRoutes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GuestRoute from "./Routes/GuestRoutes";
 import AppLayout from "./Components/Layout/AppLayout";
+import Error from "./Components/Error/Error";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App: React.FC = () => {
               <Route path="/login" element={<Auth path="login" />} />
               <Route path="/register" element={<Auth path="register" />} />
             </Route>
+            <Route path="*" element={Error({ message: "Page Not Found" })} />
           </Routes>
         </QueryClientProvider>
       </BrowserRouter>

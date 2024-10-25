@@ -32,6 +32,7 @@ export type CustomExercise = {
 
 export type ExerciseCardProps = {
   onExerciseClick: (exercise: ExerciseInfo) => void;
+  className?: string;
 };
 
 export type ExerciseMuscle = {
@@ -247,4 +248,12 @@ export type RoutineWithInfo = {
   Routine_Custom_Exercise: RoutineCustomExercise[];
   Routine_Set: RoutineSet[];
   Routine_Superset: RoutineSuperset[];
+};
+
+export type InputFieldProps = {
+  label: string;
+  max: number;
+  value: number | string;
+  onChange: (value: number | string) => void;
+  className?: string;
 };

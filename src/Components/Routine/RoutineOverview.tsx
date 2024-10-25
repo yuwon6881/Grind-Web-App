@@ -262,7 +262,12 @@ const Exercise = ({
           <div className="flex items-center gap-1 rounded border border-accent px-2">
             <BiTimer />
             {exercise.rest_timer >= 1
-              ? "Rest " + exercise.rest_timer + " min"
+              ? "Rest " +
+                exercise.rest_timer.toString().split(".")[0] +
+                " min" +
+                (exercise.rest_timer.toString().split(".")[1] === "5"
+                  ? " 30 sec"
+                  : "")
               : exercise.rest_timer === 0
                 ? "No Rest"
                 : "Rest " + exercise.rest_timer * 100 + " sec"}
