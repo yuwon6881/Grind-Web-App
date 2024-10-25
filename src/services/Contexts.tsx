@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { User } from "../Types/Types";
+import { OnGoingWorkout, User } from "../Types/Types";
 
 export const ThemeContext = createContext<{
   globalTheme: string | undefined;
@@ -19,3 +19,10 @@ export const UserContext = createContext<{
   globalUser: User | undefined;
   setGlobalUser: React.Dispatch<React.SetStateAction<User>> | undefined;
 }>({ globalUser: undefined, setGlobalUser: undefined });
+
+export const OnGoingWorkoutContext = createContext<{
+  onGoingWorkoutDetails: OnGoingWorkout | undefined;
+  setOnGoingWorkoutDetails:
+    | React.Dispatch<React.SetStateAction<OnGoingWorkout | undefined>>
+    | undefined;
+}>({ onGoingWorkoutDetails: undefined, setOnGoingWorkoutDetails: undefined });

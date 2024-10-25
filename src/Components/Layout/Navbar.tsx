@@ -1,9 +1,16 @@
 import React, { useContext } from "react";
 import config from "../../config";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoDark from "../../Assets/logo_dark.png";
 import logoLight from "../../Assets/logo_light.png";
-import { ThemeContext, UserContext } from "../../services/Contexts";
+import {
+  OnGoingWorkoutContext,
+  ThemeContext,
+  UserContext,
+} from "../../services/Contexts";
+import { BiArrowToBottom, BiArrowToTop } from "react-icons/bi";
+import { deleteWorkout } from "../../services/Fetchs";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const handleClick = () => {
   const elem = document.activeElement as HTMLElement;
@@ -15,8 +22,14 @@ export const handleClick = () => {
 const Navbar: React.FC = () => {
   //Sign out function
   const navigate = useNavigate();
+  const [isCollapseOpen, setIsCollapseOpen] = React.useState(true);
   const { globalTheme } = useContext(ThemeContext);
   const { globalUser } = useContext(UserContext);
+  const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const isRoutinePath = /^\/routine\/[^/]+\/[^/]+$/.test(location.pathname);
+
   const signOut = async () => {
     try {
       const response = await fetch(config.API_URL + "/api/userSignOut", {
@@ -36,6 +49,9 @@ const Navbar: React.FC = () => {
 
   return (
     <>
+      {onGoingWorkoutDetails?.Workout_ID
+        ? deleteWorkoutDialog(onGoingWorkoutDetails?.Workout_ID, queryClient)
+        : null}
       <div className="h-28 shadow-sm shadow-accent">
         <div className="relative mx-10 flex h-full justify-between">
           {/* App Logo */}
@@ -88,7 +104,7 @@ const Navbar: React.FC = () => {
                 </div>
                 <div className="text-nowrap">{globalUser!.name}</div>
               </div>
-              <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2">
+              <ul className="menu dropdown-content z-[999] w-52 border border-accent bg-base-100 p-2">
                 <li>
                   <Link to="/settings" onClick={handleClick}>
                     Setting
@@ -159,16 +175,87 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="collapse bg-base-200">
-        <input type="checkbox" />
-        <div className="collapse-title text-xl font-medium">
-          Click me to show/hide content
+      {onGoingWorkoutDetails?.Workout_ID && !isRoutinePath && (
+        <div
+          className={`collapse border border-accent ${isCollapseOpen ? "collapse-open" : "collapse-close"}`}
+        >
+          <button
+            className="collapse-title flex items-center justify-center p-0 text-xl font-medium"
+            onClick={() => {
+              setIsCollapseOpen(!isCollapseOpen);
+            }}
+          >
+            {isCollapseOpen ? <BiArrowToTop /> : <BiArrowToBottom />}
+          </button>
+          <div className="collapse-content flex flex-col items-center justify-center gap-2">
+            <span>Workout In Progress</span>
+            <div className="flex gap-3">
+              <button
+                className="btn btn-outline btn-success btn-sm"
+                onClick={() => {
+                  navigate(
+                    `/routine/${onGoingWorkoutDetails.Routine_ID}/${onGoingWorkoutDetails.Workout_ID}`,
+                  );
+                }}
+              >
+                Continue
+              </button>
+              <button
+                className="btn btn-outline btn-error btn-sm"
+                onClick={() => {
+                  const dialog = document.getElementById(
+                    `deleteWorkoutDialog`,
+                  ) as HTMLDialogElement;
+                  if (dialog) {
+                    dialog.showModal();
+                  }
+                }}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="collapse-content">
-          <p>hello</p>
-        </div>
-      </div>
+      )}
     </>
+  );
+};
+
+const deleteWorkoutDialog = (
+  id: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
+  return (
+    <dialog id={`deleteWorkoutDialog`} className="modal">
+      <div className="modal-box pb-2">
+        <p className="text-center text-lg font-semibold">
+          Confirm Discard Workout?
+        </p>
+        <form method="dialog" className="flex justify-center gap-10 py-4">
+          <div className="flex gap-3">
+            <button className="btn btn-accent text-accent-content">
+              Cancel
+            </button>
+            <button
+              className="btn btn-error text-error-content"
+              onClick={() => {
+                deleteWorkout(id).then(() => {
+                  queryClient.invalidateQueries({
+                    queryKey: ["fetchOnGoingWorkout"],
+                  });
+                  handleClick();
+                });
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
   );
 };
 

@@ -8,7 +8,7 @@ import { Workout } from "../../Types/Types";
 import { BiRefresh } from "react-icons/bi";
 
 const Dashboard: React.FC = () => {
-  const { data, error, isLoading } = useQuery({
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["workouts"],
     queryFn: fetchWorkouts,
   });
@@ -73,9 +73,17 @@ const Dashboard: React.FC = () => {
               .filter((workout: Workout) => workout.status == "COMPLETED")
               .map((workout: Workout) =>
                 filterDate === null ? (
-                  <CardHistory key={workout.id} data={workout} />
+                  <CardHistory
+                    key={workout.id}
+                    data={workout}
+                    workoutRefetch={refetch}
+                  />
                 ) : workout.start_date === filterDate ? (
-                  <CardHistory key={workout.id} data={workout} />
+                  <CardHistory
+                    key={workout.id}
+                    data={workout}
+                    workoutRefetch={refetch}
+                  />
                 ) : null,
               )}
         </div>

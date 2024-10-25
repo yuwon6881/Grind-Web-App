@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import config from "../../config/index";
 import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +30,12 @@ const Login: React.FC = () => {
         const error = await response.json();
         throw new Error(error.message);
       }
+      queryClient.invalidateQueries({
+        queryKey: ["fetchUser"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fetchSettings"],
+      });
       navigate("/");
     } catch (error: unknown) {
       if (error instanceof Error) {

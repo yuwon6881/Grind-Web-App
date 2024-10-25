@@ -1,8 +1,14 @@
-import React, { useState } from "react";
-import { Outlet, Navigate } from "react-router-dom";
-import { fetchSettings, fetchToken, fetchUser } from "../services/Fetchs";
+import React, { useEffect, useState } from "react";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
+import {
+  fetchOnGoingWorkout,
+  fetchSettings,
+  fetchToken,
+  fetchUser,
+} from "../services/Fetchs";
 import Loading from "../Components/Loader/Loading";
 import {
+  OnGoingWorkoutContext,
   ThemeContext,
   UserContext,
   WeightUnitContext,
@@ -10,6 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import Error from "../Components/Error/Error";
 import { setHtmlTheme } from "../Components/Layout/AppLayout";
+import { OnGoingWorkout } from "../Types/Types";
 
 const ProtectedRoutes: React.FC = () => {
   const [theme, setTheme] = useState<string | undefined>(undefined);
@@ -18,6 +25,9 @@ const ProtectedRoutes: React.FC = () => {
     name: "",
     profilePicture: "",
   });
+  const [onGoingWorkoutDetails, setOnGoingWorkoutDetails] = useState<
+    OnGoingWorkout | undefined
+  >(undefined);
 
   // fetch token
   const {
@@ -32,8 +42,27 @@ const ProtectedRoutes: React.FC = () => {
   const { settingData, settingLoading, settingIsError, settingIsFetched } =
     useSetting();
 
-  // // fetch user name & profile picture
+  // fetch user name & profile picture
   const { userData, userLoading, userIsError, userIsFetched } = useUser();
+
+  // fetch onGoing workout
+  const {
+    data: onGoingWorkoutData,
+    isLoading: onGoingWorkoutLoading,
+    isError: onGoingWorkoutError,
+    refetch: onGoingWorkoutRefetch,
+    isFetched: onGoingWorkoutIsFetched,
+  } = useQuery<{ Workout_ID: string; Routine_ID: string }>({
+    queryKey: ["fetchOnGoingWorkout"],
+    queryFn: fetchOnGoingWorkout,
+    staleTime: 0,
+  });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    onGoingWorkoutRefetch();
+  }, [location.pathname]);
 
   if (tokenIsStale) if (!tokenIsRefetching) tokenRefetch();
 
@@ -45,11 +74,11 @@ const ProtectedRoutes: React.FC = () => {
     return <Navigate to="/login" />;
   }
 
-  if (settingLoading || userLoading) {
+  if (settingLoading || userLoading || onGoingWorkoutLoading) {
     return <Loading />;
   }
 
-  if (settingIsError || userIsError) {
+  if (settingIsError || userIsError || onGoingWorkoutError) {
     return <Error />;
   }
 
@@ -75,6 +104,11 @@ const ProtectedRoutes: React.FC = () => {
     }
   }
 
+  if (onGoingWorkoutIsFetched) {
+    if (onGoingWorkoutDetails?.Workout_ID !== onGoingWorkoutData?.Workout_ID)
+      setOnGoingWorkoutDetails(onGoingWorkoutData);
+  }
+
   setHtmlTheme(theme!);
 
   return (
@@ -90,7 +124,11 @@ const ProtectedRoutes: React.FC = () => {
         <UserContext.Provider
           value={{ globalUser: user, setGlobalUser: setUser }}
         >
-          <Outlet />
+          <OnGoingWorkoutContext.Provider
+            value={{ onGoingWorkoutDetails, setOnGoingWorkoutDetails }}
+          >
+            <Outlet />
+          </OnGoingWorkoutContext.Provider>
         </UserContext.Provider>
       </WeightUnitContext.Provider>
     </ThemeContext.Provider>

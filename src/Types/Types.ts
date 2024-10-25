@@ -257,3 +257,8 @@ export type InputFieldProps = {
   onChange: (value: number | string) => void;
   className?: string;
 };
+
+export type OnGoingWorkout = {
+  Workout_ID: string;
+  Routine_ID: string;
+};

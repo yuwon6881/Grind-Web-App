@@ -355,7 +355,7 @@ export const fetchRoutine = async (id: string) => {
       throw new Error(`Failed to fetch routine, status: ${response.status}`);
 
     const data = await response.json();
-    return data.data;
+    return data;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return Promise.reject(error);
@@ -382,6 +382,62 @@ export const createRoutineWorkout = async (
 
     if (!response.ok)
       throw new Error(`Failed to create workout, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const deleteWorkout = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workout/" + id, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to delete workout, status: ${response.status}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const getWorkout = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workout/" + id, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch workout, status: ${response.status}`);
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchOnGoingWorkout = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workoutInProgress", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch on going workout, status: ${response.status}`,
+      );
 
     const data = await response.json();
     return data.data;

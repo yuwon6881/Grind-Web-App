@@ -121,7 +121,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   return (
     <div
       className={`card sticky top-10 h-full flex-col gap-4 border border-accent p-3 ${className}`}
-      style={{ height: "85vh" }}
+      style={{ height: "70vh" }}
     >
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
       {muscleIsError ||

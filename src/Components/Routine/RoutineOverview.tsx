@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 // eslint-disable-next-line import/named
 import { NavigateFunction, useNavigate, useParams } from "react-router-dom";
 import {
@@ -19,15 +19,23 @@ import { handleClick } from "../Layout/Navbar";
 import { FaDumbbell } from "react-icons/fa";
 import { BiNotepad, BiTimer } from "react-icons/bi";
 import { IoRepeat } from "react-icons/io5";
+import { OnGoingWorkoutContext } from "../../services/Contexts";
 
 const RoutineOverview = () => {
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, isError } = useQuery<RoutineWithInfo>({
+  const {
+    data: RoutineData,
+    isLoading,
+    isError,
+  } = useQuery<{ data: RoutineWithInfo }>({
     queryKey: ["routine", id],
     queryFn: () => fetchRoutine(id!),
   });
+  const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
 
   const navigate = useNavigate();
+
+  const data = RoutineData?.data;
 
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorMessage message="Routine Not Found" />;
@@ -54,6 +62,7 @@ const RoutineOverview = () => {
                       });
                     }
                   }}
+                  disabled={!!onGoingWorkoutDetails?.Workout_ID}
                 >
                   Start Routine
                 </button>

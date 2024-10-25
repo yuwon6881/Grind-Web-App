@@ -51,6 +51,14 @@ const Preferences = () => {
       if (setGlobalWeightUnit && weightUnit) {
         setGlobalWeightUnit(weightUnit);
       }
+
+      const successMessage = document.getElementById("successMessage");
+      if (successMessage) {
+        successMessage.style.display = "block";
+        setTimeout(() => {
+          successMessage.style.display = "none";
+        }, 3000);
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error(error.message);
@@ -94,6 +102,13 @@ const Preferences = () => {
       <div className="mt-4 flex justify-center">
         <input type="submit" value="Apply" className="btn btn-accent" />
       </div>
+      <span
+        id="successMessage"
+        className="text-center text-success"
+        style={{ display: "none" }}
+      >
+        Changes Saved
+      </span>
     </form>
   );
 };

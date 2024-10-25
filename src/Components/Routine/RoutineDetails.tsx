@@ -22,13 +22,19 @@ import { handleClick } from "../Layout/Navbar";
 import { v4 as uuidv4 } from "uuid";
 import config from "../../config";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDefaultFolder, fetchRoutine } from "../../services/Fetchs";
+import {
+  deleteWorkout,
+  fetchDefaultFolder,
+  fetchRoutine,
+  getWorkout,
+} from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
 import { WeightUnitContext } from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
 import { FaDumbbell } from "react-icons/fa";
 
 const RoutineDetails = () => {
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [exercises, setExercises] = React.useState<ExerciseInfo[]>([]);
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
   const [superset, setSuperset] = React.useState<SuperSet[]>([]);
@@ -37,13 +43,12 @@ const RoutineDetails = () => {
   const { id, workout_id } = useParams();
   const navigate = useNavigate();
 
-  const { data: routineData }: { data: RoutineWithInfo | undefined } = useQuery(
-    {
+  const { data: routineData }: { data: { data: RoutineWithInfo } | undefined } =
+    useQuery({
       queryKey: ["routine", id],
       queryFn: () => fetchRoutine(id!),
       enabled: !!id,
-    },
-  );
+    });
 
   // Retrieve default folder id
   const { data, isError } = useQuery({
@@ -57,11 +62,35 @@ const RoutineDetails = () => {
     setExerciseSets,
     setSuperset,
     setRoutineName,
-    routineData,
+    routineData?.data,
+    globalWeightUnit!,
   );
 
-  if (isError) {
-    return <ErrorMessage />;
+  React.useEffect(() => {
+    if (id) {
+      fetchRoutine(id).then((response) => {
+        if (!response.success) {
+          setErrorMsg("Routine Not Found");
+        }
+      });
+    }
+  }, [id]);
+
+  React.useEffect(() => {
+    if (workout_id) {
+      getWorkout(workout_id).then((response) => {
+        if (!response.success) {
+          setErrorMsg("Workout Not Found");
+        }
+        if (response.data?.routine_id !== id) {
+          setErrorMsg("Workout Not Found");
+        }
+      });
+    }
+  }, [workout_id]);
+
+  if (isError || errorMsg) {
+    return <ErrorMessage message={errorMsg ?? "Folder Not Found"} />;
   }
 
   return (
@@ -108,6 +137,7 @@ const RoutineDetails = () => {
       <div className="col-span-3 md:col-span-2">
         <form
           className="mt-2 flex flex-col gap-2"
+          style={{ height: "70vh" }}
           onSubmit={(e) => {
             handleSubmit(
               e,
@@ -127,6 +157,9 @@ const RoutineDetails = () => {
               <button
                 onClick={(e) => {
                   e.preventDefault();
+                  deleteWorkout(workout_id).then(() => {
+                    navigate("/routines");
+                  });
                 }}
                 className="btn btn-outline btn-error btn-sm"
               >
@@ -145,6 +178,7 @@ const RoutineDetails = () => {
               <button
                 onClick={(e) => {
                   e.preventDefault();
+                  navigate("/routines");
                 }}
                 className="btn btn-outline btn-success btn-sm"
               >
@@ -214,6 +248,7 @@ const RoutineDetails = () => {
                       setExerciseSets={setExerciseSets}
                       superset={superset}
                       workout_id={workout_id}
+                      globalWeightUnit={globalWeightUnit!}
                     />
                   </div>
                 ))}
@@ -278,6 +313,7 @@ const Exercise: React.FC<{
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
   superset: SuperSet[];
   workout_id: string | undefined;
+  globalWeightUnit: string;
 }> = ({
   exercise,
   index,
@@ -287,6 +323,7 @@ const Exercise: React.FC<{
   setExerciseSets,
   superset,
   workout_id,
+  globalWeightUnit,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -436,6 +473,7 @@ const Exercise: React.FC<{
         exerciseSets={exerciseSets}
         setExerciseSets={setExerciseSets}
         workout_id={workout_id}
+        globalWeightUnit={globalWeightUnit}
       />
       <button
         type="button"
@@ -455,7 +493,14 @@ const Sets: React.FC<{
   exerciseSets: ExerciseSet[];
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
   workout_id: string | undefined;
-}> = ({ exercise, exerciseSets, setExerciseSets, workout_id }) => {
+  globalWeightUnit: string;
+}> = ({
+  exercise,
+  exerciseSets,
+  setExerciseSets,
+  workout_id,
+  globalWeightUnit,
+}) => {
   function removeSet(id: string): void {
     const [exerciseID, setIndex] = id.split("#");
     setExerciseSets((sets) => {
@@ -544,7 +589,7 @@ const Sets: React.FC<{
               </select>
             </div>
             <InputField
-              label="Weights"
+              label={`Weight (${globalWeightUnit})`}
               max={1000}
               value={set.weight}
               onChange={(newWeight) => updateSet(setIndex, "weight", newWeight)}
@@ -628,6 +673,7 @@ const displayRoutine = async (
   setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>,
   setRoutineName: React.Dispatch<React.SetStateAction<string>>,
   data: RoutineWithInfo | undefined,
+  globalWeightUnit: string,
 ) => {
   React.useEffect(() => {
     if (!data) return;
@@ -685,7 +731,11 @@ const displayRoutine = async (
     const newExerciseSets = data.Routine_Set.map((set) => ({
       id: `${set.exercise_id ?? set.custom_exercise_id}@${set.set_uuid}`,
       reps: set.reps ? set.reps.toString() : "",
-      weight: set.weight ? set.weight.toString() : "",
+      weight: set.weight
+        ? globalWeightUnit === "KG"
+          ? Number(set.weight).toFixed(2)
+          : Number(set.weight * 2.20462).toFixed(2)
+        : "",
       rpe: set.rpe ? set.rpe.toString() : "",
       set_type: set.set_type as
         | "NORMAL"

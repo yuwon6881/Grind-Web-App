@@ -34,6 +34,13 @@ const Profile: React.FC = () => {
 
     if (response.ok) {
       if (setGlobalUser) setGlobalUser(user);
+      const successMessage = document.getElementById("successMessage");
+      if (successMessage) {
+        successMessage.style.display = "block";
+        setTimeout(() => {
+          successMessage.style.display = "none";
+        }, 3000);
+      }
     } else {
       const error = await response.json();
       throw new Error(error.message);
@@ -80,6 +87,13 @@ const Profile: React.FC = () => {
         />
       </label>
       <input type="submit" className="btn btn-accent" />
+      <span
+        id="successMessage"
+        className="text-success"
+        style={{ display: "none" }}
+      >
+        Changes Saved
+      </span>
     </form>
   );
 };
