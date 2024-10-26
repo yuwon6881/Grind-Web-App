@@ -492,7 +492,8 @@ const CustomExerciseList: React.FC<{
             <BiTrash
               type="button"
               className="text-2xl text-red-600"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 (
                   document.getElementById(
                     `deleteAlert-${id}`,

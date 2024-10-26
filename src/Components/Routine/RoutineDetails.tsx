@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ExerciseCard from "../Exercise/ExerciseCard";
 import {
   BiDownArrow,
@@ -14,8 +14,10 @@ import {
   ExerciseInfo,
   ExerciseSet,
   InputFieldProps,
+  OnGoingWorkout,
   RoutineWithInfo,
   SuperSet,
+  WorkoutInfo,
 } from "../../Types/Types";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
@@ -29,7 +31,10 @@ import {
   getWorkout,
 } from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
-import { WeightUnitContext } from "../../services/Contexts";
+import {
+  OnGoingWorkoutContext,
+  WeightUnitContext,
+} from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
 import { FaDumbbell } from "react-icons/fa";
 
@@ -39,7 +44,16 @@ const RoutineDetails = () => {
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
   const [superset, setSuperset] = React.useState<SuperSet[]>([]);
   const [routineName, setRoutineName] = React.useState("");
+  const { onGoingWorkoutDetails, setOnGoingWorkoutDetails } = React.useContext(
+    OnGoingWorkoutContext,
+  );
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
+  const [workoutInfo, setWorkoutInfo] = React.useState<WorkoutInfo | null>(
+    null,
+  );
+  const [currentTime, setCurrentTime] = React.useState(
+    new Date().toISOString(),
+  );
   const { id, workout_id } = useParams();
   const navigate = useNavigate();
 
@@ -66,6 +80,29 @@ const RoutineDetails = () => {
     globalWeightUnit!,
   );
 
+  const calculateDuration = () => {
+    if (!workoutInfo) return "N/A";
+
+    const startDate = new Date(workoutInfo.start_date);
+    const current = new Date(currentTime);
+    const duration = current.getTime() - startDate.getTime();
+
+    const durationInSeconds = Math.floor(duration / 1000);
+    const durationInMinutes = Math.floor(durationInSeconds / 60);
+    const durationInHours = Math.floor(durationInMinutes / 60);
+
+    return `${durationInHours ? durationInHours + " hours, " : ""}${durationInMinutes ? (durationInMinutes % 60) + " minutes, " : ""} ${durationInSeconds % 60} seconds`;
+  };
+
+  // Duration Timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toISOString());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   React.useEffect(() => {
     if (id) {
       fetchRoutine(id).then((response) => {
@@ -79,6 +116,9 @@ const RoutineDetails = () => {
   React.useEffect(() => {
     if (workout_id) {
       getWorkout(workout_id).then((response) => {
+        setWorkoutInfo(() => {
+          return { start_date: new Date(response.data.start_date) };
+        });
         if (!response.success) {
           setErrorMsg("Workout Not Found");
         }
@@ -152,7 +192,13 @@ const RoutineDetails = () => {
             );
           }}
         >
-          <div className="flex justify-between">
+          {workoutInfo?.start_date && (
+            <div className="font-semibold">
+              Duration:{" "}
+              <span className="font-normal">{calculateDuration()}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
             {workout_id ? (
               <button
                 onClick={(e) => {
@@ -173,6 +219,29 @@ const RoutineDetails = () => {
                 <BiLeftArrowAlt />
                 Routine
               </Link>
+            )}
+            {workout_id && onGoingWorkoutDetails!.currentTimer > 0 && (
+              <div className="flex items-center gap-3">
+                <span>Timer</span>
+                <progress
+                  className="progress progress-success w-56"
+                  value={onGoingWorkoutDetails!.currentTimer}
+                  max={onGoingWorkoutDetails!.maxTimer}
+                ></progress>
+                <span>{onGoingWorkoutDetails!.currentTimer + " Secs"}</span>
+                <button
+                  className="btn btn-outline btn-warning btn-xs"
+                  onClick={() => {
+                    setOnGoingWorkoutDetails!({
+                      ...onGoingWorkoutDetails!,
+                      currentTimer: 0,
+                      maxTimer: 0,
+                    });
+                  }}
+                >
+                  Skip
+                </button>
+              </div>
             )}
             {workout_id ? (
               <button
@@ -249,6 +318,7 @@ const RoutineDetails = () => {
                       superset={superset}
                       workout_id={workout_id}
                       globalWeightUnit={globalWeightUnit!}
+                      setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
                     />
                   </div>
                 ))}
@@ -314,6 +384,9 @@ const Exercise: React.FC<{
   superset: SuperSet[];
   workout_id: string | undefined;
   globalWeightUnit: string;
+  setOnGoingWorkoutDetails: React.Dispatch<
+    React.SetStateAction<OnGoingWorkout | undefined>
+  >;
 }> = ({
   exercise,
   index,
@@ -324,6 +397,7 @@ const Exercise: React.FC<{
   superset,
   workout_id,
   globalWeightUnit,
+  setOnGoingWorkoutDetails,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -474,6 +548,7 @@ const Exercise: React.FC<{
         setExerciseSets={setExerciseSets}
         workout_id={workout_id}
         globalWeightUnit={globalWeightUnit}
+        setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
       />
       <button
         type="button"
@@ -494,12 +569,16 @@ const Sets: React.FC<{
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
   workout_id: string | undefined;
   globalWeightUnit: string;
+  setOnGoingWorkoutDetails: React.Dispatch<
+    React.SetStateAction<OnGoingWorkout | undefined>
+  >;
 }> = ({
   exercise,
   exerciseSets,
   setExerciseSets,
   workout_id,
   globalWeightUnit,
+  setOnGoingWorkoutDetails,
 }) => {
   function removeSet(id: string): void {
     const [exerciseID, setIndex] = id.split("#");
@@ -611,12 +690,36 @@ const Sets: React.FC<{
             />
             {workout_id && (
               <div className="flex flex-col items-center gap-1 pb-2">
-                <span>Complete?</span>
+                <span>Completed?</span>
                 <div className="form-control">
                   <input
                     type="checkbox"
                     id={`checkbox-${exercise.id}-${setIndex}`}
                     className="checkbox-accent checkbox rounded"
+                    onChange={(e) => {
+                      const checkbox = e.target as HTMLInputElement;
+                      if (checkbox.checked) {
+                        setOnGoingWorkoutDetails!((prev) => {
+                          if (parseFloat(exercise.restTime) >= 1) {
+                            const seconds =
+                              parseFloat(exercise.restTime.split(".")[0]) * 60 +
+                              (parseFloat(exercise.restTime.split(".")[1])
+                                ? 30
+                                : 0);
+                            return {
+                              ...prev!,
+                              currentTimer: seconds,
+                              maxTimer: seconds,
+                            };
+                          }
+                          return {
+                            ...prev!,
+                            currentTimer: parseFloat(exercise.restTime) * 100,
+                            maxTimer: parseFloat(exercise.restTime) * 100,
+                          };
+                        });
+                      }
+                    }}
                   />
                 </div>
               </div>

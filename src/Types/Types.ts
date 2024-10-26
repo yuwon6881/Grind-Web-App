@@ -261,4 +261,10 @@ export type InputFieldProps = {
 export type OnGoingWorkout = {
   Workout_ID: string;
   Routine_ID: string;
+  currentTimer: number;
+  maxTimer: number;
+};
+
+export type WorkoutInfo = {
+  start_date: Date;
 };

@@ -106,7 +106,13 @@ const ProtectedRoutes: React.FC = () => {
 
   if (onGoingWorkoutIsFetched) {
     if (onGoingWorkoutDetails?.Workout_ID !== onGoingWorkoutData?.Workout_ID)
-      setOnGoingWorkoutDetails(onGoingWorkoutData);
+      if (onGoingWorkoutData)
+        setOnGoingWorkoutDetails({
+          Workout_ID: onGoingWorkoutData.Workout_ID,
+          Routine_ID: onGoingWorkoutData.Routine_ID,
+          currentTimer: 0,
+          maxTimer: 0,
+        });
   }
 
   setHtmlTheme(theme!);

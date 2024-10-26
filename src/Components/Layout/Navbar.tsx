@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
 import config from "../../config";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoDark from "../../Assets/logo_dark.png";
@@ -11,6 +11,7 @@ import {
 import { BiArrowToBottom, BiArrowToTop } from "react-icons/bi";
 import { deleteWorkout } from "../../services/Fetchs";
 import { useQueryClient } from "@tanstack/react-query";
+import audioFile from "../../Assets/rest_timer_sound.mp3";
 
 export const handleClick = () => {
   const elem = document.activeElement as HTMLElement;
@@ -22,13 +23,45 @@ export const handleClick = () => {
 const Navbar: React.FC = () => {
   //Sign out function
   const navigate = useNavigate();
+  const audio = new Audio(audioFile);
   const [isCollapseOpen, setIsCollapseOpen] = React.useState(true);
   const { globalTheme } = useContext(ThemeContext);
   const { globalUser } = useContext(UserContext);
-  const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
+  const { onGoingWorkoutDetails, setOnGoingWorkoutDetails } = useContext(
+    OnGoingWorkoutContext,
+  );
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
   const queryClient = useQueryClient();
   const isRoutinePath = /^\/routine\/[^/]+\/[^/]+$/.test(location.pathname);
+
+  // Rest Timer
+  React.useEffect(() => {
+    if (onGoingWorkoutDetails!.currentTimer > 0) {
+      intervalRef.current = setInterval(() => {
+        setOnGoingWorkoutDetails!((prev) => {
+          if (prev!.currentTimer - 1 <= 0) {
+            clearInterval(intervalRef.current!);
+            audio.play();
+            return {
+              ...prev!,
+              currentTimer: 0,
+            };
+          }
+          return {
+            ...prev!,
+            currentTimer: prev!.currentTimer - 1,
+          };
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [onGoingWorkoutDetails!.currentTimer]);
 
   const signOut = async () => {
     try {
@@ -187,8 +220,17 @@ const Navbar: React.FC = () => {
           >
             {isCollapseOpen ? <BiArrowToTop /> : <BiArrowToBottom />}
           </button>
-          <div className="collapse-content flex flex-col items-center justify-center gap-2">
+          <div className="collapse-content flex flex-col items-center justify-center gap-3">
             <span>Workout In Progress</span>
+            {onGoingWorkoutDetails!.currentTimer > 0 ? (
+              <div className="flex items-center gap-3">
+                <progress
+                  className="progress progress-success w-24"
+                  value={onGoingWorkoutDetails!.currentTimer}
+                  max={onGoingWorkoutDetails!.maxTimer}
+                ></progress>
+              </div>
+            ) : null}
             <div className="flex gap-3">
               <button
                 className="btn btn-outline btn-success btn-sm"
