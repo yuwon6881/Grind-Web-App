@@ -25,14 +25,18 @@ import { v4 as uuidv4 } from "uuid";
 import config from "../../config";
 import { useQuery } from "@tanstack/react-query";
 import {
+  createWorkoutExercises,
+  createWorkoutSuperset,
   deleteWorkout,
   fetchDefaultFolder,
   fetchRoutine,
   getWorkout,
+  updateWorkout,
 } from "../../services/Fetchs";
 import ErrorMessage from "../Error/Error";
 import {
   OnGoingWorkoutContext,
+  OnGoingWorkoutInfoContext,
   WeightUnitContext,
 } from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
@@ -46,6 +50,9 @@ const RoutineDetails = () => {
   const [routineName, setRoutineName] = React.useState("");
   const { onGoingWorkoutDetails, setOnGoingWorkoutDetails } = React.useContext(
     OnGoingWorkoutContext,
+  );
+  const { onGoingWorkoutInfo, setOnGoingWorkoutInfo } = React.useContext(
+    OnGoingWorkoutInfoContext,
   );
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
   const [workoutInfo, setWorkoutInfo] = React.useState<WorkoutInfo | null>(
@@ -94,6 +101,24 @@ const RoutineDetails = () => {
     return `${durationInHours ? durationInHours + " hours, " : ""}${durationInMinutes ? (durationInMinutes % 60) + " minutes, " : ""} ${durationInSeconds % 60} seconds`;
   };
 
+  const syncWorkoutInfo = () => {
+    if (workout_id)
+      setOnGoingWorkoutInfo!({
+        Exercise: exercises,
+        ExerciseSet: exerciseSets,
+        Superset: superset,
+        WorkoutName: routineName,
+      });
+  };
+
+  const clearWorkoutInfo = () => {
+    setOnGoingWorkoutInfo!(undefined);
+  };
+
+  useEffect(() => {
+    if (workoutInfo?.status === "IN_PROGRESS") syncWorkoutInfo();
+  }, [exercises, exerciseSets, superset, routineName]);
+
   // Duration Timer
   useEffect(() => {
     const interval = setInterval(() => {
@@ -117,8 +142,17 @@ const RoutineDetails = () => {
     if (workout_id) {
       getWorkout(workout_id).then((response) => {
         setWorkoutInfo(() => {
-          return { start_date: new Date(response.data.start_date) };
+          return {
+            start_date: new Date(response.data.start_date),
+            status: response.data.status,
+          };
         });
+        if (onGoingWorkoutInfo !== undefined) {
+          setExercises(onGoingWorkoutInfo.Exercise);
+          setExerciseSets(onGoingWorkoutInfo.ExerciseSet);
+          setSuperset(onGoingWorkoutInfo.Superset);
+          setRoutineName(onGoingWorkoutInfo.WorkoutName);
+        }
         if (!response.success) {
           setErrorMsg("Workout Not Found");
         }
@@ -170,6 +204,8 @@ const RoutineDetails = () => {
               weight: "",
               set_type: "NORMAL",
               rpe: "",
+              completed: false,
+              set_uuid: uuidv4(),
             },
           ]);
         }}
@@ -181,7 +217,8 @@ const RoutineDetails = () => {
           onSubmit={(e) => {
             handleSubmit(
               e,
-              id!,
+              id,
+              workout_id,
               data,
               routineName,
               globalWeightUnit!,
@@ -192,17 +229,18 @@ const RoutineDetails = () => {
             );
           }}
         >
-          {workoutInfo?.start_date && (
+          {workoutInfo?.start_date && workoutInfo?.status === "IN_PROGRESS" && (
             <div className="font-semibold">
               Duration:{" "}
               <span className="font-normal">{calculateDuration()}</span>
             </div>
           )}
           <div className="flex items-center justify-between">
-            {workout_id ? (
+            {workout_id && workoutInfo?.status === "IN_PROGRESS" ? (
               <button
                 onClick={(e) => {
                   e.preventDefault();
+                  clearWorkoutInfo();
                   deleteWorkout(workout_id).then(() => {
                     navigate("/routines");
                   });
@@ -211,6 +249,14 @@ const RoutineDetails = () => {
               >
                 Cancel
               </button>
+            ) : workout_id ? (
+              <Link
+                to="/"
+                className="flex items-center gap-2 text-lg underline-offset-4 hover:underline"
+              >
+                <BiLeftArrowAlt />
+                Workout
+              </Link>
             ) : (
               <Link
                 to="/routines"
@@ -220,34 +266,36 @@ const RoutineDetails = () => {
                 Routine
               </Link>
             )}
-            {workout_id && onGoingWorkoutDetails!.currentTimer > 0 && (
-              <div className="flex items-center gap-3">
-                <span>Timer</span>
-                <progress
-                  className="progress progress-success w-56"
-                  value={onGoingWorkoutDetails!.currentTimer}
-                  max={onGoingWorkoutDetails!.maxTimer}
-                ></progress>
-                <span>{onGoingWorkoutDetails!.currentTimer + " Secs"}</span>
-                <button
-                  className="btn btn-outline btn-warning btn-xs"
-                  onClick={() => {
-                    setOnGoingWorkoutDetails!({
-                      ...onGoingWorkoutDetails!,
-                      currentTimer: 0,
-                      maxTimer: 0,
-                    });
-                  }}
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-            {workout_id ? (
+            {workout_id &&
+              workoutInfo?.status === "IN_PROGRESS" &&
+              onGoingWorkoutDetails &&
+              onGoingWorkoutDetails.currentTimer > 0 && (
+                <div className="flex items-center gap-3">
+                  <span>Timer</span>
+                  <progress
+                    className="progress progress-success sm:w-32 md:w-24 lg:w-56"
+                    value={onGoingWorkoutDetails!.currentTimer}
+                    max={onGoingWorkoutDetails!.maxTimer}
+                  ></progress>
+                  <span>{onGoingWorkoutDetails!.currentTimer + " Secs"}</span>
+                  <button
+                    className="btn btn-outline btn-warning btn-xs"
+                    onClick={() => {
+                      setOnGoingWorkoutDetails!({
+                        ...onGoingWorkoutDetails!,
+                        currentTimer: 0,
+                        maxTimer: 0,
+                      });
+                    }}
+                  >
+                    Skip
+                  </button>
+                </div>
+              )}
+            {workout_id && workoutInfo?.status === "IN_PROGRESS" ? (
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate("/routines");
+                onClick={() => {
+                  clearWorkoutInfo();
                 }}
                 className="btn btn-outline btn-success btn-sm"
               >
@@ -264,7 +312,9 @@ const RoutineDetails = () => {
             placeholder="Routine Name"
             className="input input-sm input-bordered w-full"
             value={routineName}
-            onChange={(e) => setRoutineName(e.target.value)}
+            onChange={(e) => {
+              setRoutineName(e.target.value);
+            }}
             required
           />
           {exercises.length === 0 ? (
@@ -319,6 +369,7 @@ const RoutineDetails = () => {
                       workout_id={workout_id}
                       globalWeightUnit={globalWeightUnit!}
                       setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
+                      WorkoutInfo={workoutInfo}
                     />
                   </div>
                 ))}
@@ -387,6 +438,7 @@ const Exercise: React.FC<{
   setOnGoingWorkoutDetails: React.Dispatch<
     React.SetStateAction<OnGoingWorkout | undefined>
   >;
+  WorkoutInfo: WorkoutInfo | null;
 }> = ({
   exercise,
   index,
@@ -398,6 +450,7 @@ const Exercise: React.FC<{
   workout_id,
   globalWeightUnit,
   setOnGoingWorkoutDetails,
+  WorkoutInfo,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -412,6 +465,8 @@ const Exercise: React.FC<{
       weight: "",
       rpe: "",
       set_type: "NORMAL",
+      completed: false,
+      set_uuid: uuidv4(),
     };
     setExerciseSets([...exerciseSets, newSet]);
   }
@@ -549,6 +604,7 @@ const Exercise: React.FC<{
         workout_id={workout_id}
         globalWeightUnit={globalWeightUnit}
         setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
+        WorkoutInfo={WorkoutInfo}
       />
       <button
         type="button"
@@ -572,6 +628,7 @@ const Sets: React.FC<{
   setOnGoingWorkoutDetails: React.Dispatch<
     React.SetStateAction<OnGoingWorkout | undefined>
   >;
+  WorkoutInfo: WorkoutInfo | null;
 }> = ({
   exercise,
   exerciseSets,
@@ -579,6 +636,7 @@ const Sets: React.FC<{
   workout_id,
   globalWeightUnit,
   setOnGoingWorkoutDetails,
+  WorkoutInfo,
 }) => {
   function removeSet(id: string): void {
     const [exerciseID, setIndex] = id.split("#");
@@ -696,9 +754,22 @@ const Sets: React.FC<{
                     type="checkbox"
                     id={`checkbox-${exercise.id}-${setIndex}`}
                     className="checkbox-accent checkbox rounded"
+                    checked={set.completed}
                     onChange={(e) => {
+                      setExerciseSets((prev) => {
+                        return prev.map((prevSet) => {
+                          if (prevSet.set_uuid === set.set_uuid) {
+                            return { ...prevSet, completed: e.target.checked };
+                          }
+                          return prevSet;
+                        });
+                      });
+
                       const checkbox = e.target as HTMLInputElement;
-                      if (checkbox.checked) {
+                      if (
+                        checkbox.checked &&
+                        WorkoutInfo?.status === "IN_PROGRESS"
+                      ) {
                         setOnGoingWorkoutDetails!((prev) => {
                           if (parseFloat(exercise.restTime) >= 1) {
                             const seconds =
@@ -845,6 +916,8 @@ const displayRoutine = async (
         | "DROPSET"
         | "LONG_LENGTH_PARTIAL"
         | "WARMUP",
+      completed: false,
+      set_uuid: uuidv4(),
     }));
 
     setExerciseSets(newExerciseSets);
@@ -1014,6 +1087,8 @@ const smallScreenExerciseDialog = (
               weight: "",
               set_type: "NORMAL",
               rpe: "",
+              completed: false,
+              set_uuid: uuidv4(),
             },
           ]);
 
@@ -1031,7 +1106,8 @@ const smallScreenExerciseDialog = (
 
 const handleSubmit = async (
   e: React.FormEvent<HTMLFormElement>,
-  id: string,
+  id: string | undefined,
+  workout_id: string | undefined,
   data: string,
   routineName: string,
   globalWeightUnit: string,
@@ -1042,9 +1118,9 @@ const handleSubmit = async (
 ): Promise<void> => {
   e.preventDefault();
 
-  let routineResponse: Response;
+  let response: Response;
   try {
-    if (id) {
+    if (id && workout_id === undefined) {
       const deleteRoutineExercisesResponse = await fetch(
         config.API_URL + `/api/routine/${id}/exercises`,
         {
@@ -1058,7 +1134,7 @@ const handleSubmit = async (
         throw new Error(error.message);
       }
 
-      routineResponse = await fetch(config.API_URL + `/api/routine/${id}`, {
+      response = await fetch(config.API_URL + `/api/routine/${id}`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -1066,31 +1142,40 @@ const handleSubmit = async (
         },
         body: JSON.stringify({ name: routineName }),
       });
-    } else {
+    } else if (id === undefined && workout_id === undefined) {
       // Create routine
-      routineResponse = await fetch(
-        config.API_URL + `/api/folder/${data}/routine`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: routineName }),
+      response = await fetch(config.API_URL + `/api/folder/${data}/routine`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ name: routineName }),
+      });
+    } else {
+      response = (await updateWorkout(
+        workout_id!,
+        routineName,
+      )) as unknown as Response;
     }
 
-    if (!routineResponse.ok) {
-      const error = await routineResponse.json();
+    // Error here
+    if (!response.ok) {
+      const error = await response.json();
       throw new Error(error.message);
     }
 
-    const routineData = await routineResponse.json();
+    const infoData = await response.json();
 
     const formattedExercises = exercises.map((exercise) => {
       const sets = exerciseSets
-        .filter((set) => set.id === exercise.id)
+        .filter((set) => {
+          if (!workout_id && id) {
+            return set.id === exercise.id;
+          } else {
+            return set.id === exercise.id && set.completed;
+          }
+        })
         .map((set, index) => ({
           reps: set.reps ? parseInt(set.reps as string) : null,
           weight: set.weight
@@ -1102,6 +1187,13 @@ const handleSubmit = async (
           index: index + 1,
           set_type: set.set_type,
           set_uuid: exercise.id.split("@")[1],
+          ...(workout_id
+            ? {
+                volume:
+                  (set.reps ? parseInt(set.reps as string) : 0) *
+                  (set.weight ? parseFloat(set.weight as string) : 0),
+              }
+            : {}),
         }));
 
       return {
@@ -1110,6 +1202,7 @@ const handleSubmit = async (
           ? exercise.id.split("@")[0]
           : undefined,
         routine_uuid: exercise.id.split("@")[1],
+        workout_uuid: exercise.id.split("@")[1],
         index: exercise.index,
         rest_timer: exercise.restTime ? parseFloat(exercise.restTime) : null,
         note: exercise.note,
@@ -1117,21 +1210,33 @@ const handleSubmit = async (
       };
     });
 
-    const routineExerciseResponse = await fetch(
-      config.API_URL + `/api/routine/${routineData.data.id}/exercises`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+    if (!workout_id && id) {
+      const exercisesResponse = await fetch(
+        config.API_URL + `/api/routine/${infoData.data.id}/exercises`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ exercises: formattedExercises }),
         },
-        body: JSON.stringify({ exercises: formattedExercises }),
-      },
-    );
+      );
 
-    if (!routineExerciseResponse.ok) {
-      const error = await routineExerciseResponse.json();
-      throw new Error(error.message);
+      if (!exercisesResponse.ok) {
+        const error = await exercisesResponse.json();
+        throw new Error(error.message);
+      }
+    } else {
+      const exercisesResponse = (await createWorkoutExercises(
+        workout_id!,
+        formattedExercises,
+      )) as unknown as Response;
+
+      if (!exercisesResponse.ok) {
+        const error = await exercisesResponse.json();
+        throw new Error(error.message);
+      }
     }
 
     const formatedSuperset = superset?.map((exercise) => ({
@@ -1139,33 +1244,45 @@ const handleSubmit = async (
       custom_exercise_id: exercise.custom
         ? exercise.id.split("@")[0]
         : undefined,
+      workout_uuid: exercise.id.split("@")[1],
+      workout_id: workout_id,
       routine_uuid: exercise.id.split("@")[1],
-      routine_id: routineData.data.id,
+      routine_id: infoData.data.id as string,
     }));
 
     if (formatedSuperset.length !== 0) {
-      const routineSuperSetResponse = await fetch(
-        config.API_URL + `/api/routine/${routineData.data.id}/superset`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
+      if (!workout_id && id) {
+        const routineSuperSetResponse = await fetch(
+          config.API_URL + `/api/routine/${infoData.data.id}/superset`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              routine_id: infoData.data.id,
+              superset: formatedSuperset,
+            }),
           },
-          body: JSON.stringify({
-            routine_id: routineData.data.id,
-            superset: formatedSuperset,
-          }),
-        },
-      );
+        );
+        if (!routineSuperSetResponse.ok) {
+          const error = await routineSuperSetResponse.json();
+          throw new Error(error.message);
+        }
+      } else {
+        const workoutSuperSetResponse = (await createWorkoutSuperset(
+          workout_id!,
+          formatedSuperset,
+        )) as unknown as Response;
 
-      if (!routineSuperSetResponse.ok) {
-        const error = await routineSuperSetResponse.json();
-        throw new Error(error.message);
+        if (!workoutSuperSetResponse.ok) {
+          const error = await workoutSuperSetResponse.json();
+          throw new Error(error.message);
+        }
       }
     }
-
-    navigate("/routines");
+    workout_id ? navigate("/") : navigate("/routines");
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(error.message);

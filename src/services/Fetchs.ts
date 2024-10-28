@@ -447,3 +447,109 @@ export const fetchOnGoingWorkout = async () => {
     }
   }
 };
+
+export const updateWorkout = async (id: string, name: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workout/" + id, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to update workout, status: ${response.status}`);
+
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const createWorkoutExercises = async (
+  workout_id: string,
+  exercises: {
+    exercise_id: string | undefined;
+    custom_exercise_id: string | undefined;
+    routine_uuid: string;
+    index: number;
+    rest_timer: number | null;
+    note: string;
+    sets: {
+      reps: number | null;
+      weight: number | null;
+      rpe: number | null;
+      index: number;
+      set_type: "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP";
+      set_uuid: string;
+      volume?: number | undefined;
+    }[];
+  }[],
+) => {
+  try {
+    const response = await fetch(
+      config.API_URL + `/api/workout/${workout_id}/exercises`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ exercises }),
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to create workout exercises, status: ${response.status}`,
+      );
+
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const createWorkoutSuperset = async (
+  workout_id: string,
+  superset: {
+    exercise_id: string | undefined;
+    custom_exercise_id: string | undefined;
+    routine_uuid: string;
+    routine_id: string;
+  }[],
+) => {
+  try {
+    const response = await fetch(
+      config.API_URL + `/api/workout/${workout_id}/superset`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          workout_id: workout_id,
+          superset: superset,
+        }),
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to create workout superset, status: ${response.status}`,
+      );
+
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};

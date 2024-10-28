@@ -9,6 +9,7 @@ import {
 import Loading from "../Components/Loader/Loading";
 import {
   OnGoingWorkoutContext,
+  OnGoingWorkoutInfoContext,
   ThemeContext,
   UserContext,
   WeightUnitContext,
@@ -16,7 +17,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import Error from "../Components/Error/Error";
 import { setHtmlTheme } from "../Components/Layout/AppLayout";
-import { OnGoingWorkout } from "../Types/Types";
+import { OnGoingWorkout, OnGoingWorkoutInfo } from "../Types/Types";
 
 const ProtectedRoutes: React.FC = () => {
   const [theme, setTheme] = useState<string | undefined>(undefined);
@@ -27,6 +28,9 @@ const ProtectedRoutes: React.FC = () => {
   });
   const [onGoingWorkoutDetails, setOnGoingWorkoutDetails] = useState<
     OnGoingWorkout | undefined
+  >(undefined);
+  const [onGoingWorkoutInfo, setOnGoingWorkoutInfo] = useState<
+    OnGoingWorkoutInfo | undefined
   >(undefined);
 
   // fetch token
@@ -133,7 +137,14 @@ const ProtectedRoutes: React.FC = () => {
           <OnGoingWorkoutContext.Provider
             value={{ onGoingWorkoutDetails, setOnGoingWorkoutDetails }}
           >
-            <Outlet />
+            <OnGoingWorkoutInfoContext.Provider
+              value={{
+                onGoingWorkoutInfo: onGoingWorkoutInfo,
+                setOnGoingWorkoutInfo: setOnGoingWorkoutInfo,
+              }}
+            >
+              <Outlet />
+            </OnGoingWorkoutInfoContext.Provider>
           </OnGoingWorkoutContext.Provider>
         </UserContext.Provider>
       </WeightUnitContext.Provider>

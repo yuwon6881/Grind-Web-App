@@ -14,6 +14,13 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
   const { globalUser } = React.useContext(UserContext);
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
 
+  const formatDuration = (milliseconds: number) => {
+    const totalMinutes = Math.floor(milliseconds / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  };
+
   const exercises = data.Workout_Exercise.map((exercise) => ({
     name: exercise.Exercise.name,
     index: exercise.index,
@@ -104,7 +111,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
                 <div>
                   <div>
                     <span className="text-sm">Duration</span>
-                    <h6>{data.duration}</h6>
+                    <h6>{formatDuration(data.duration)}</h6>
                   </div>
                 </div>
                 <div>

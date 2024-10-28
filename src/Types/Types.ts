@@ -61,10 +61,12 @@ export type ExerciseInfo = {
 
 export type ExerciseSet = {
   id: string;
+  set_uuid: string;
   reps: number | string;
   weight: number | string;
   rpe: number | string;
   set_type: "NORMAL" | "DROPSET" | "LONG_LENGTH_PARTIAL" | "WARMUP";
+  completed: boolean;
 };
 
 type ExerciseForWorkoutHistory = {
@@ -136,7 +138,7 @@ export type Workout = {
   start_date: string;
   end_date: string | null;
   name: string;
-  duration: number | null;
+  duration: number;
   status: string;
   routine_id: string;
   Workout_Exercise: WorkoutExercise[];
@@ -267,4 +269,12 @@ export type OnGoingWorkout = {
 
 export type WorkoutInfo = {
   start_date: Date;
+  status: "COMPLETED" | "IN_PROGRESS";
+};
+
+export type OnGoingWorkoutInfo = {
+  Exercise: ExerciseInfo[];
+  ExerciseSet: ExerciseSet[];
+  Superset: SuperSet[];
+  WorkoutName: string;
 };

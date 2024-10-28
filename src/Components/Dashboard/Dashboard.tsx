@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ height: "70vh" }}>
       <h2>Dashboard</h2>
       <div className="mt-6 grid grid-cols-3 gap-10">
         <div className="order-2 col-span-3 mb-4 space-y-4 lg:order-1 lg:col-span-2">
@@ -71,6 +71,11 @@ const Dashboard: React.FC = () => {
           {data &&
             data
               .filter((workout: Workout) => workout.status == "COMPLETED")
+              .sort(
+                (a: Workout, b: Workout) =>
+                  new Date(b.start_date).getTime() -
+                  new Date(a.start_date).getTime(),
+              )
               .map((workout: Workout) =>
                 filterDate === null ? (
                   <CardHistory

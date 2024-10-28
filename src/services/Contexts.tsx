@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { OnGoingWorkout, User } from "../Types/Types";
+import { OnGoingWorkout, OnGoingWorkoutInfo, User } from "../Types/Types";
 
 export const ThemeContext = createContext<{
   globalTheme: string | undefined;
@@ -26,3 +26,10 @@ export const OnGoingWorkoutContext = createContext<{
     | React.Dispatch<React.SetStateAction<OnGoingWorkout | undefined>>
     | undefined;
 }>({ onGoingWorkoutDetails: undefined, setOnGoingWorkoutDetails: undefined });
+
+export const OnGoingWorkoutInfoContext = createContext<{
+  onGoingWorkoutInfo: OnGoingWorkoutInfo | undefined;
+  setOnGoingWorkoutInfo:
+    | React.Dispatch<React.SetStateAction<OnGoingWorkoutInfo | undefined>>
+    | undefined;
+}>({ onGoingWorkoutInfo: undefined, setOnGoingWorkoutInfo: undefined });

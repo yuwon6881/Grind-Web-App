@@ -5,6 +5,7 @@ import logoDark from "../../Assets/logo_dark.png";
 import logoLight from "../../Assets/logo_light.png";
 import {
   OnGoingWorkoutContext,
+  OnGoingWorkoutInfoContext,
   ThemeContext,
   UserContext,
 } from "../../services/Contexts";
@@ -12,6 +13,7 @@ import { BiArrowToBottom, BiArrowToTop } from "react-icons/bi";
 import { deleteWorkout } from "../../services/Fetchs";
 import { useQueryClient } from "@tanstack/react-query";
 import audioFile from "../../Assets/rest_timer_sound.mp3";
+import { OnGoingWorkoutInfo } from "../../Types/Types";
 
 export const handleClick = () => {
   const elem = document.activeElement as HTMLElement;
@@ -30,6 +32,7 @@ const Navbar: React.FC = () => {
   const { onGoingWorkoutDetails, setOnGoingWorkoutDetails } = useContext(
     OnGoingWorkoutContext,
   );
+  const { setOnGoingWorkoutInfo } = useContext(OnGoingWorkoutInfoContext);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -37,31 +40,32 @@ const Navbar: React.FC = () => {
 
   // Rest Timer
   React.useEffect(() => {
-    if (onGoingWorkoutDetails!.currentTimer > 0) {
-      intervalRef.current = setInterval(() => {
-        setOnGoingWorkoutDetails!((prev) => {
-          if (prev!.currentTimer - 1 <= 0) {
-            clearInterval(intervalRef.current!);
-            audio.play();
+    if (onGoingWorkoutDetails)
+      if (onGoingWorkoutDetails!.currentTimer > 0) {
+        intervalRef.current = setInterval(() => {
+          setOnGoingWorkoutDetails!((prev) => {
+            if (prev!.currentTimer - 1 <= 0) {
+              clearInterval(intervalRef.current!);
+              audio.play();
+              return {
+                ...prev!,
+                currentTimer: 0,
+              };
+            }
             return {
               ...prev!,
-              currentTimer: 0,
+              currentTimer: prev!.currentTimer - 1,
             };
-          }
-          return {
-            ...prev!,
-            currentTimer: prev!.currentTimer - 1,
-          };
-        });
-      }, 1000);
-    }
+          });
+        }, 1000);
+      }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [onGoingWorkoutDetails!.currentTimer]);
+  }, [onGoingWorkoutDetails?.currentTimer]);
 
   const signOut = async () => {
     try {
@@ -83,7 +87,11 @@ const Navbar: React.FC = () => {
   return (
     <>
       {onGoingWorkoutDetails?.Workout_ID
-        ? deleteWorkoutDialog(onGoingWorkoutDetails?.Workout_ID, queryClient)
+        ? deleteWorkoutDialog(
+            onGoingWorkoutDetails?.Workout_ID,
+            queryClient,
+            setOnGoingWorkoutInfo!,
+          )
         : null}
       <div className="h-28 shadow-sm shadow-accent">
         <div className="relative mx-10 flex h-full justify-between">
@@ -225,7 +233,7 @@ const Navbar: React.FC = () => {
             {onGoingWorkoutDetails!.currentTimer > 0 ? (
               <div className="flex items-center gap-3">
                 <progress
-                  className="progress progress-success w-24"
+                  className="progress progress-success w-40"
                   value={onGoingWorkoutDetails!.currentTimer}
                   max={onGoingWorkoutDetails!.maxTimer}
                 ></progress>
@@ -266,6 +274,9 @@ const Navbar: React.FC = () => {
 const deleteWorkoutDialog = (
   id: string,
   queryClient: ReturnType<typeof useQueryClient>,
+  setOnGoingWorkoutInfo: React.Dispatch<
+    React.SetStateAction<OnGoingWorkoutInfo | undefined>
+  >,
 ) => {
   return (
     <dialog id={`deleteWorkoutDialog`} className="modal">
@@ -285,6 +296,7 @@ const deleteWorkoutDialog = (
                   queryClient.invalidateQueries({
                     queryKey: ["fetchOnGoingWorkout"],
                   });
+                  setOnGoingWorkoutInfo!(undefined);
                   handleClick();
                 });
               }}
