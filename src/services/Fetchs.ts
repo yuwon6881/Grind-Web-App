@@ -363,6 +363,25 @@ export const fetchRoutine = async (id: string) => {
   }
 };
 
+export const fetchWorkout = async (id: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/workout/" + id, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch workout, status: ${response.status}`);
+
+    const data = await response.json();
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
 export const createRoutineWorkout = async (
   routine_id: string,
   name: string,

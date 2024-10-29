@@ -26,6 +26,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
     index: exercise.index,
     id: exercise.exercise_id,
     image: exercise.Exercise.image,
+    workout_uuid: exercise.workout_uuid,
     exercise: true,
   }));
 
@@ -35,6 +36,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
       index: customExercise.index,
       id: customExercise.custom_exercise_id,
       image: customExercise.Custom_Exercise.image,
+      workout_uuid: customExercise.workout_uuid,
       exercise: false,
     }),
   );
@@ -88,6 +90,14 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
                 </div>
                 <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
                   <li>
+                    <Link
+                      to={`/routine/${data.routine_id}/${data.id}`}
+                      className="text-blue-600"
+                    >
+                      Edit Workout
+                    </Link>
+                  </li>
+                  <li>
                     <button
                       type="button"
                       className="text-red-600"
@@ -119,8 +129,8 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
                     <span className="text-sm">Volume</span>
                     <h6>
                       {globalWeightUnit === "KG"
-                        ? Math.floor(totalVolume)
-                        : Math.floor(totalVolume * 2.20462)}
+                        ? Math.round(totalVolume)
+                        : Math.round(totalVolume * 2.20462)}
                       {globalWeightUnit?.toLowerCase() === "kg" ? "kg" : "lbs"}
                     </h6>
                   </div>
@@ -139,8 +149,11 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
           </div>
           <div className="divider m-0"></div>
           <div className="flex flex-col gap-3">
-            {sortedExercises.map((exercise) => (
-              <div key={exercise.id} className="flex items-center gap-2">
+            {sortedExercises.slice(0, 3).map((exercise) => (
+              <div
+                key={exercise.workout_uuid}
+                className="flex items-center gap-3"
+              >
                 {exercise.image ? (
                   <img
                     src={exercise.image}
@@ -148,24 +161,32 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
                     className="h-8 w-8 rounded-full"
                   />
                 ) : (
-                  <FaDumbbell />
+                  <FaDumbbell className="h-8 w-8 rounded-full" />
                 )}
                 <h6>
-                  {exercise.exercise
-                    ? data.Workout_Sets.filter(
-                        (set) => set.exercise_id === exercise.id,
-                      ).length
-                    : data.Workout_Sets.filter(
-                        (set) => set.custom_exercise_id === exercise.id,
-                      ).length}
+                  {
+                    data.Workout_Sets.filter(
+                      (set) => set.set_uuid === exercise.workout_uuid,
+                    ).length
+                  }
                   <span> Sets of </span>
                   {exercise.name}
                 </h6>
               </div>
             ))}
+            {sortedExercises.length > 3 && (
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-accent-content  ">
+                  + {sortedExercises.length - 3} More
+                </span>
+              </div>
+            )}
           </div>
           <div className="mt-4 flex justify-center">
-            <Link to="/" className="btn btn-outline btn-sm">
+            <Link
+              // to={`/routine/${data.routine_id}/${data.id}`}
+              className="btn btn-outline btn-sm"
+            >
               View Details
             </Link>
           </div>

@@ -234,6 +234,18 @@ type RoutineSuperset_CustomExercise = {
   routine_uuid: string;
 };
 
+type WorkoutSuperset_Exercise = {
+  id: string;
+  supersets_id: string;
+  workout_uuid: string;
+};
+
+type WorkoutSuperset_CustomExercise = {
+  id: string;
+  supersets_id: string;
+  workout_uuid: string;
+};
+
 export type RoutineSuperset = {
   id: string;
   routine_id: string;
@@ -250,6 +262,27 @@ export type RoutineWithInfo = {
   Routine_Custom_Exercise: RoutineCustomExercise[];
   Routine_Set: RoutineSet[];
   Routine_Superset: RoutineSuperset[];
+};
+
+export type WorkoutSuperset = {
+  id: string;
+  routine_id: string;
+  WorkoutSuperset_Exercise: WorkoutSuperset_Exercise[];
+  WorkoutSuperset_CustomExercise: WorkoutSuperset_CustomExercise[];
+};
+
+export type WorkoutWithInfo = {
+  id: string;
+  name: string;
+  index: number;
+  routine_id: string;
+  duration: number | null;
+  end_date: Date | null;
+  status: "COMPLETED" | "IN_PROGRESS";
+  Workout_Exercise: WorkoutExercise[];
+  Workout_Custom_Exercise: WorkoutCustomExercise[];
+  Workout_Sets: WorkoutSet[];
+  Workout_Superset: WorkoutSuperset[];
 };
 
 export type InputFieldProps = {

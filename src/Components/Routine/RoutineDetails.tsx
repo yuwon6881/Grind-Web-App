@@ -18,6 +18,7 @@ import {
   RoutineWithInfo,
   SuperSet,
   WorkoutInfo,
+  WorkoutWithInfo,
 } from "../../Types/Types";
 import { HiDotsVertical } from "react-icons/hi";
 import { handleClick } from "../Layout/Navbar";
@@ -30,6 +31,7 @@ import {
   deleteWorkout,
   fetchDefaultFolder,
   fetchRoutine,
+  fetchWorkout,
   getWorkout,
   updateWorkout,
 } from "../../services/Fetchs";
@@ -71,6 +73,13 @@ const RoutineDetails = () => {
       enabled: !!id,
     });
 
+  const { data: workoutData }: { data: { data: WorkoutWithInfo } | undefined } =
+    useQuery({
+      queryKey: ["workout", workout_id],
+      queryFn: () => fetchWorkout(workout_id!),
+      enabled: !!workout_id,
+    });
+
   // Retrieve default folder id
   const { data, isError } = useQuery({
     queryKey: ["defaultFolder"],
@@ -79,11 +88,13 @@ const RoutineDetails = () => {
 
   displayRoutine(
     id,
+    workout_id,
     setExercises,
     setExerciseSets,
     setSuperset,
     setRoutineName,
     routineData?.data,
+    workoutData?.data,
     globalWeightUnit!,
   );
 
@@ -114,6 +125,10 @@ const RoutineDetails = () => {
   const clearWorkoutInfo = () => {
     setOnGoingWorkoutInfo!(undefined);
   };
+
+  useEffect(() => {
+    if (superset.length < 2) setSuperset([]);
+  }, [exercises]);
 
   useEffect(() => {
     if (workoutInfo?.status === "IN_PROGRESS") syncWorkoutInfo();
@@ -366,6 +381,7 @@ const RoutineDetails = () => {
                       exerciseSets={exerciseSets}
                       setExerciseSets={setExerciseSets}
                       superset={superset}
+                      setSuperset={setSuperset}
                       workout_id={workout_id}
                       globalWeightUnit={globalWeightUnit!}
                       setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
@@ -433,6 +449,7 @@ const Exercise: React.FC<{
   exerciseSets: ExerciseSet[];
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>;
   superset: SuperSet[];
+  setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>;
   workout_id: string | undefined;
   globalWeightUnit: string;
   setOnGoingWorkoutDetails: React.Dispatch<
@@ -447,6 +464,7 @@ const Exercise: React.FC<{
   exerciseSets,
   setExerciseSets,
   superset,
+  setSuperset,
   workout_id,
   globalWeightUnit,
   setOnGoingWorkoutDetails,
@@ -456,6 +474,7 @@ const Exercise: React.FC<{
     const newExercises = [...exercises];
     newExercises.splice(index, 1);
     setExercises(newExercises);
+    setSuperset(superset.filter((ss) => ss.id !== exercise.id));
   }
 
   function addSet(id: string): void {
@@ -523,12 +542,10 @@ const Exercise: React.FC<{
                     <button
                       type="button"
                       onClick={() => {
-                        (
-                          document.getElementById(
-                            "superset_dialog",
-                          ) as HTMLDialogElement
-                        )?.showModal();
-                        handleClick();
+                        document.getElementById(
+                          "superset_error",
+                        )!.style.display = "none";
+                        document.getElementById("superset_dialog")?.click();
                       }}
                       className="text-blue-600"
                     >
@@ -820,7 +837,7 @@ const InputField: React.FC<InputFieldProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span>{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
       <input
         type="number"
         max={max}
@@ -842,89 +859,215 @@ const InputField: React.FC<InputFieldProps> = ({
 
 const displayRoutine = async (
   id: string | undefined,
+  workout_id: string | undefined,
   setExercises: React.Dispatch<React.SetStateAction<ExerciseInfo[]>>,
   setExerciseSets: React.Dispatch<React.SetStateAction<ExerciseSet[]>>,
   setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>,
   setRoutineName: React.Dispatch<React.SetStateAction<string>>,
-  data: RoutineWithInfo | undefined,
+  routineData: RoutineWithInfo | undefined,
+  workoutData: WorkoutWithInfo | undefined,
   globalWeightUnit: string,
 ) => {
+  const isWorkoutData = (
+    data: RoutineWithInfo | WorkoutWithInfo,
+  ): data is WorkoutWithInfo => {
+    return "routine_id" in data;
+  };
+
   React.useEffect(() => {
-    if (!data) return;
+    if (!routineData) return;
+    if (workout_id && !workoutData) return;
 
-    const newExercises = [
-      ...data.Routine_Exercise.map((exercise) => ({
-        name: exercise.Exercise.name,
-        id: exercise.exercise_id + "@" + exercise.routine_uuid,
-        restTime: exercise.rest_timer.toString(),
-        note: exercise.note,
-        custom: false,
-        index: exercise.index,
-        image: exercise.Exercise.image,
-      })),
-      ...data.Routine_Custom_Exercise.map((customExercise) => ({
-        name: customExercise.Custom_Exercise.name,
-        id:
-          customExercise.custom_exercise_id + "@" + customExercise.routine_uuid,
-        restTime: customExercise.rest_timer.toString(),
-        note: customExercise.note,
-        custom: true,
-        index: customExercise.index,
-        image: customExercise.Custom_Exercise.image,
-      })),
-    ];
+    const data =
+      workout_id && workoutData?.status === "COMPLETED"
+        ? workoutData!
+        : routineData;
 
-    const supersetData = data.Routine_Superset.map((superset) => {
-      const customExercises = superset.RoutineSuperset_CustomExercise.map(
-        (exercise) => {
-          const exercise_id = data.Routine_Custom_Exercise.find(
+    let newExercises: ExerciseInfo[] = [];
+    let supersetData = [];
+    let newExerciseSets = [];
+    const routineUUIDs = new Set<string>();
+    const uuidMap = new Map<string, string>();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const replaceUUIDs = (obj: any) => {
+      for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null) {
+          replaceUUIDs(obj[key]);
+        } else if (typeof obj[key] === "string" && uuidMap.has(obj[key])) {
+          obj[key] = uuidMap.get(obj[key]);
+        }
+      }
+    };
+
+    if (data !== undefined && isWorkoutData(data)) {
+      newExercises = [
+        ...data.Workout_Exercise.map((exercise) => ({
+          name: exercise.Exercise.name,
+          id: exercise.exercise_id + "@" + exercise.workout_uuid,
+          restTime: exercise.rest_timer.toString(),
+          note: exercise.note,
+          custom: false,
+          index: exercise.index,
+          image: exercise.Exercise.image,
+        })),
+        ...data.Workout_Custom_Exercise.map((customExercise) => ({
+          name: customExercise.Custom_Exercise.name,
+          id:
+            customExercise.custom_exercise_id +
+            "@" +
+            customExercise.workout_uuid,
+          restTime: customExercise.rest_timer.toString(),
+          note: customExercise.note,
+          custom: true,
+          index: customExercise.index,
+          image: customExercise.Custom_Exercise.image,
+        })),
+      ];
+    } else {
+      data.Routine_Exercise.forEach((exercise) => {
+        routineUUIDs.add(exercise.routine_uuid);
+      });
+
+      data.Routine_Custom_Exercise.forEach((exercise) => {
+        routineUUIDs.add(exercise.routine_uuid);
+      });
+
+      routineUUIDs.forEach((uuid) => {
+        uuidMap.set(uuid, uuidv4());
+      });
+
+      // Replace routine_uuid with new uuid for on going workout
+      replaceUUIDs(data);
+
+      newExercises = [
+        ...data.Routine_Exercise.map((exercise) => ({
+          name: exercise.Exercise.name,
+          id: exercise.exercise_id + "@" + exercise.routine_uuid,
+          restTime: exercise.rest_timer.toString(),
+          note: exercise.note,
+          custom: false,
+          index: exercise.index,
+          image: exercise.Exercise.image,
+        })),
+        ...data.Routine_Custom_Exercise.map((customExercise) => ({
+          name: customExercise.Custom_Exercise.name,
+          id:
+            customExercise.custom_exercise_id +
+            "@" +
+            customExercise.routine_uuid,
+          restTime: customExercise.rest_timer.toString(),
+          note: customExercise.note,
+          custom: true,
+          index: customExercise.index,
+          image: customExercise.Custom_Exercise.image,
+        })),
+      ];
+    }
+
+    if (data !== undefined && !isWorkoutData(data)) {
+      supersetData = data.Routine_Superset.map((superset) => {
+        const customExercises = superset.RoutineSuperset_CustomExercise.map(
+          (exercise) => {
+            const exercise_id = data.Routine_Custom_Exercise.find(
+              (ex) => ex.routine_uuid === exercise.routine_uuid,
+            )?.custom_exercise_id;
+
+            return {
+              id: exercise_id + "@" + exercise.routine_uuid,
+              custom: true,
+            };
+          },
+        );
+
+        const exercises = superset.RoutineSuperset_Exercise.map((exercise) => {
+          const exercise_id = data.Routine_Exercise.find(
             (ex) => ex.routine_uuid === exercise.routine_uuid,
-          )?.custom_exercise_id;
+          )?.exercise_id;
 
           return {
             id: exercise_id + "@" + exercise.routine_uuid,
-            custom: true,
+            custom: false,
           };
-        },
-      );
+        });
 
-      const exercises = superset.RoutineSuperset_Exercise.map((exercise) => {
-        const exercise_id = data.Routine_Exercise.find(
-          (ex) => ex.routine_uuid === exercise.routine_uuid,
-        )?.exercise_id;
+        return [...customExercises, ...exercises];
+      }).flat();
 
-        return {
-          id: exercise_id + "@" + exercise.routine_uuid,
-          custom: false,
-        };
-      });
+      newExerciseSets = data.Routine_Set.map((set) => ({
+        id: `${set.exercise_id ?? set.custom_exercise_id}@${set.set_uuid}`,
+        reps: set.reps ? set.reps.toString() : "",
+        weight: set.weight
+          ? globalWeightUnit === "KG"
+            ? Number(set.weight).toFixed(2)
+            : Number(set.weight * 2.20462).toFixed(2)
+          : "",
+        rpe: set.rpe ? set.rpe.toString() : "",
+        set_type: set.set_type as
+          | "NORMAL"
+          | "DROPSET"
+          | "LONG_LENGTH_PARTIAL"
+          | "WARMUP",
+        completed: false,
+        set_uuid: uuidv4(),
+      }));
+    } else {
+      supersetData = data.Workout_Superset.map((superset) => {
+        const customExercises = superset.WorkoutSuperset_CustomExercise.map(
+          (exercise) => {
+            const exercise_id = data.Workout_Custom_Exercise.find(
+              (ex) => ex.workout_uuid === exercise.workout_uuid,
+            )?.custom_exercise_id;
 
-      return [...customExercises, ...exercises];
-    }).flat();
+            return {
+              id: exercise_id + "@" + exercise.workout_uuid,
+              custom: true,
+            };
+          },
+        );
 
-    const newExerciseSets = data.Routine_Set.map((set) => ({
-      id: `${set.exercise_id ?? set.custom_exercise_id}@${set.set_uuid}`,
-      reps: set.reps ? set.reps.toString() : "",
-      weight: set.weight
-        ? globalWeightUnit === "KG"
-          ? Number(set.weight).toFixed(2)
-          : Number(set.weight * 2.20462).toFixed(2)
-        : "",
-      rpe: set.rpe ? set.rpe.toString() : "",
-      set_type: set.set_type as
-        | "NORMAL"
-        | "DROPSET"
-        | "LONG_LENGTH_PARTIAL"
-        | "WARMUP",
-      completed: false,
-      set_uuid: uuidv4(),
-    }));
+        const exercises = superset.WorkoutSuperset_Exercise.map((exercise) => {
+          const exercise_id = data.Workout_Exercise.find(
+            (ex) => ex.workout_uuid === exercise.workout_uuid,
+          )?.exercise_id;
+
+          return {
+            id: exercise_id + "@" + exercise.workout_uuid,
+            custom: false,
+          };
+        });
+
+        return [...customExercises, ...exercises];
+      }).flat();
+
+      newExerciseSets = data.Workout_Sets.map((set) => ({
+        id: `${set.exercise_id ?? set.custom_exercise_id}@${set.set_uuid}`,
+        reps: set.reps ? set.reps.toString() : "",
+        weight: set.weight
+          ? globalWeightUnit === "KG"
+            ? Number(set.weight).toFixed(2)
+            : Number(set.weight * 2.20462).toFixed(2)
+          : "",
+        rpe: set.rpe ? set.rpe.toString() : "",
+        set_type: set.set_type as
+          | "NORMAL"
+          | "DROPSET"
+          | "LONG_LENGTH_PARTIAL"
+          | "WARMUP",
+        completed: true,
+        set_uuid: uuidv4(),
+      }));
+    }
+
+    const filteredExercises = newExercises.filter((exercise) =>
+      newExerciseSets.some((set) => set.id === exercise.id),
+    );
 
     setExerciseSets(newExerciseSets);
-    setExercises(newExercises);
+    setExercises(filteredExercises);
     setRoutineName(data.name);
     setSuperset(supersetData);
-  }, [data]);
+  }, [workoutData, routineData]);
 };
 
 const move_dialog = (
@@ -1028,27 +1171,54 @@ const superset_dialog = (
   setSuperset: React.Dispatch<React.SetStateAction<SuperSet[]>>,
 ) => {
   return (
-    <dialog id="superset_dialog" className="modal">
-      <div className="modal-box pb-2">
-        <p className="text-center text-lg font-semibold">
-          Choose SuperSet Exercise
-        </p>
-        <div className="mt-2 flex flex-col gap-3">
-          {exercises.map((exercise, index) => (
-            <SuperSetExercise
-              key={index}
-              exercise={exercise}
-              index={index}
-              superset={superset}
-              setSuperset={setSuperset}
-            />
-          ))}
+    <>
+      <input type="checkbox" id="superset_dialog" className="modal-toggle" />
+      <div className="modal flex items-center justify-center" role="dialog">
+        <div className="modal-box rounded-lg pb-2">
+          <p className="text-center text-lg font-semibold">
+            Choose SuperSet Exercise
+          </p>
+          <div
+            id="superset_error"
+            style={{ display: "none" }}
+            className="text-center text-error"
+          >
+            Please Choose At Least 2 Exercises
+          </div>
+          <div className="mt-2 flex flex-col gap-3">
+            {exercises.map((exercise, index) => (
+              <SuperSetExercise
+                key={index}
+                exercise={exercise}
+                index={index}
+                superset={superset}
+                setSuperset={setSuperset}
+              />
+            ))}
+          </div>
+          <div className="mt-3 flex justify-center">
+            <button
+              className="btn btn-accent"
+              onClick={() => {
+                const dialog = document.getElementById(
+                  "superset_dialog",
+                ) as HTMLInputElement | null;
+                if (dialog) {
+                  if (superset.length < 2 && superset.length !== 0) {
+                    document.getElementById("superset_error")!.style.display =
+                      "block";
+                    return;
+                  }
+                  dialog.checked = false;
+                }
+              }}
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+    </>
   );
 };
 
@@ -1170,7 +1340,7 @@ const handleSubmit = async (
     const formattedExercises = exercises.map((exercise) => {
       const sets = exerciseSets
         .filter((set) => {
-          if (!workout_id && id) {
+          if (!workout_id) {
             return set.id === exercise.id;
           } else {
             return set.id === exercise.id && set.completed;
@@ -1210,7 +1380,30 @@ const handleSubmit = async (
       };
     });
 
-    if (!workout_id && id) {
+    const formattedSuperset = superset?.map((exercise) => ({
+      exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
+      custom_exercise_id: exercise.custom
+        ? exercise.id.split("@")[0]
+        : undefined,
+      workout_uuid: exercise.id.split("@")[1],
+      workout_id: workout_id,
+      routine_uuid: exercise.id.split("@")[1],
+      routine_id: infoData.data.id as string,
+    }));
+
+    const filteredFormattedExercises = formattedExercises.filter(
+      (exercise) => exercise.sets.length > 0,
+    );
+
+    const filteredFormattedSuperset = formattedSuperset?.filter((exercise) =>
+      filteredFormattedExercises.some(
+        (filteredExercise) =>
+          filteredExercise.exercise_id === exercise.exercise_id &&
+          filteredExercise.custom_exercise_id === exercise.custom_exercise_id,
+      ),
+    );
+
+    if (!workout_id) {
       const exercisesResponse = await fetch(
         config.API_URL + `/api/routine/${infoData.data.id}/exercises`,
         {
@@ -1230,7 +1423,7 @@ const handleSubmit = async (
     } else {
       const exercisesResponse = (await createWorkoutExercises(
         workout_id!,
-        formattedExercises,
+        filteredFormattedExercises,
       )) as unknown as Response;
 
       if (!exercisesResponse.ok) {
@@ -1239,19 +1432,8 @@ const handleSubmit = async (
       }
     }
 
-    const formatedSuperset = superset?.map((exercise) => ({
-      exercise_id: exercise.custom ? undefined : exercise.id.split("@")[0],
-      custom_exercise_id: exercise.custom
-        ? exercise.id.split("@")[0]
-        : undefined,
-      workout_uuid: exercise.id.split("@")[1],
-      workout_id: workout_id,
-      routine_uuid: exercise.id.split("@")[1],
-      routine_id: infoData.data.id as string,
-    }));
-
-    if (formatedSuperset.length !== 0) {
-      if (!workout_id && id) {
+    if (formattedSuperset.length > 1) {
+      if (!workout_id) {
         const routineSuperSetResponse = await fetch(
           config.API_URL + `/api/routine/${infoData.data.id}/superset`,
           {
@@ -1262,7 +1444,11 @@ const handleSubmit = async (
             },
             body: JSON.stringify({
               routine_id: infoData.data.id,
-              superset: formatedSuperset,
+              superset: formattedSuperset.filter((superset) =>
+                formattedExercises.some(
+                  (exercise) => exercise.routine_uuid === superset.routine_uuid,
+                ),
+              ),
             }),
           },
         );
@@ -1271,14 +1457,16 @@ const handleSubmit = async (
           throw new Error(error.message);
         }
       } else {
-        const workoutSuperSetResponse = (await createWorkoutSuperset(
-          workout_id!,
-          formatedSuperset,
-        )) as unknown as Response;
+        if (filteredFormattedSuperset.length > 1) {
+          const workoutSuperSetResponse = (await createWorkoutSuperset(
+            workout_id!,
+            filteredFormattedSuperset,
+          )) as unknown as Response;
 
-        if (!workoutSuperSetResponse.ok) {
-          const error = await workoutSuperSetResponse.json();
-          throw new Error(error.message);
+          if (!workoutSuperSetResponse.ok) {
+            const error = await workoutSuperSetResponse.json();
+            throw new Error(error.message);
+          }
         }
       }
     }

@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
         if (
           date.getDate() === new Date(workout.start_date).getDate() &&
           date.getMonth() === new Date(workout.start_date).getMonth() &&
+          date.getFullYear() === new Date(workout.start_date).getFullYear() &&
           workout.status === "COMPLETED"
         ) {
           return "bg-base-300";
@@ -38,7 +39,9 @@ const Dashboard: React.FC = () => {
           value.getMonth() === new Date(workout.start_date).getMonth() &&
           workout.status === "COMPLETED"
         ) {
-          setFilterDate(workout.start_date);
+          const date = new Date(workout.start_date);
+          const formattedDate = date.toISOString().split("T")[0];
+          setFilterDate(formattedDate);
         }
       }
     }
@@ -83,7 +86,8 @@ const Dashboard: React.FC = () => {
                     data={workout}
                     workoutRefetch={refetch}
                   />
-                ) : workout.start_date === filterDate ? (
+                ) : new Date(workout.start_date).toISOString().split("T")[0] ===
+                  filterDate ? (
                   <CardHistory
                     key={workout.id}
                     data={workout}
