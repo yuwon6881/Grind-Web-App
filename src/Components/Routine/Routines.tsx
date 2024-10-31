@@ -207,6 +207,7 @@ const Routines = () => {
                                       1,
                                     );
                                     handleClick();
+                                    routineRefetch();
                                     folderRefetch();
                                   });
                                   handleClick();

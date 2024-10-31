@@ -184,7 +184,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
           </div>
           <div className="mt-4 flex justify-center">
             <Link
-              // to={`/routine/${data.routine_id}/${data.id}`}
+              to={`/workoutOverview/${data.id}`}
               className="btn btn-outline btn-sm"
             >
               View Details

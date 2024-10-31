@@ -4,13 +4,18 @@ import { NavigateFunction, useNavigate, useParams } from "react-router-dom";
 import {
   createRoutineWorkout,
   deleteRoutine,
+  deleteWorkout,
   fetchRoutine,
+  fetchWorkout,
 } from "../../services/Fetchs";
 import { useQuery } from "@tanstack/react-query";
 import {
   RoutineCustomExercise,
   RoutineExercise,
   RoutineWithInfo,
+  WorkoutCustomExercise,
+  WorkoutExercise,
+  WorkoutWithInfo,
 } from "../../Types/Types";
 import Loading from "../Loader/Loading";
 import ErrorMessage from "../Error/Error";
@@ -25,63 +30,103 @@ const RoutineOverview = () => {
   const { id } = useParams<{ id: string }>();
   const {
     data: RoutineData,
-    isLoading,
-    isError,
-  } = useQuery<{ data: RoutineWithInfo }>({
+    isLoading: routineIsLoading,
+    isError: routineIsError,
+    isFetched: routineIsFetched,
+  } = useQuery<{ data: RoutineWithInfo; success: boolean }>({
     queryKey: ["routine", id],
     queryFn: () => fetchRoutine(id!),
   });
+
+  const {
+    data: WorkoutData,
+    isLoading: workoutIsLoading,
+    isError: workoutIsError,
+    isFetched: workoutIsFetched,
+  } = useQuery<{ data: WorkoutWithInfo; success: boolean }>({
+    queryKey: ["workout", id],
+    queryFn: () => fetchWorkout(id!),
+  });
+
   const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
 
   const navigate = useNavigate();
 
-  const data = RoutineData?.data;
+  const isWorkoutData = (
+    data: RoutineWithInfo | WorkoutWithInfo,
+  ): data is WorkoutWithInfo => {
+    return "routine_id" in data;
+  };
 
-  if (isLoading) return <Loading />;
-  if (isError || !data) return <ErrorMessage message="Routine Not Found" />;
+  if (routineIsLoading || workoutIsLoading) return <Loading />;
+  if (routineIsError) return <ErrorMessage message="Routine Not Found" />;
+  if (workoutIsError) return <ErrorMessage message="Workout Not Found" />;
+  if (!RoutineData!.success && !WorkoutData!.success)
+    return <ErrorMessage message="Not Found" />;
+
+  if (!routineIsFetched || !workoutIsFetched) return <Loading />;
+
+  const data = RoutineData!.success ? RoutineData!.data : WorkoutData!.data;
+
   return (
     <>
-      {deleteRoutineDialog(id!, navigate)}
+      {deleteDialog(id!, navigate, isWorkoutData(data) ? "Workout" : "Routine")}
       <div>
         <div className="card border border-accent">
           <div className="card-body">
             <div className="flex items-center justify-between border-b-2 border-accent pb-8">
-              <h2>{data.name}</h2>
+              <h2>{data?.name}</h2>
               <div className="flex items-center gap-2">
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => {
-                    handleClick();
-                    if (id) {
-                      createRoutineWorkout(id, data.name).then((res) => {
-                        if (res) {
-                          navigate(`/routine/${id}/${res.id}`);
-                        } else {
-                          console.log("Failed to create workout");
-                        }
-                      });
-                    }
-                  }}
-                  disabled={!!onGoingWorkoutDetails?.Workout_ID}
-                >
-                  Start Routine
-                </button>
+                {!isWorkoutData(data) ? (
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      handleClick();
+                      if (id) {
+                        createRoutineWorkout(id, data.name).then((res) => {
+                          if (res) {
+                            navigate(`/routine/${id}/${res.id}`);
+                          } else {
+                            console.error("Failed to create workout");
+                          }
+                        });
+                      }
+                    }}
+                    disabled={!!onGoingWorkoutDetails?.Workout_ID}
+                  >
+                    Start Routine
+                  </button>
+                ) : null}
                 <div className="dropdown dropdown-end">
                   <div tabIndex={0} role="button">
                     <HiDotsVertical />
                   </div>
                   <ul className="menu dropdown-content z-[1] w-52 border border-accent bg-base-100 p-2 shadow">
-                    <li>
-                      <button
-                        className="text-blue-600"
-                        onClick={() => {
-                          handleClick();
-                          navigate(`/routine/${id}`);
-                        }}
-                      >
-                        Edit Routine
-                      </button>
-                    </li>
+                    {isWorkoutData(data) ? (
+                      <li>
+                        <button
+                          className="text-blue-600"
+                          onClick={() => {
+                            handleClick();
+                            navigate(`/routine/${data.routine_id}/${id}`);
+                          }}
+                        >
+                          Edit Workout
+                        </button>
+                      </li>
+                    ) : (
+                      <li>
+                        <button
+                          className="text-blue-600"
+                          onClick={() => {
+                            handleClick();
+                            navigate(`/routine/${id}`);
+                          }}
+                        >
+                          Edit Routine
+                        </button>
+                      </li>
+                    )}
                     <li>
                       <button
                         className="text-red-600"
@@ -104,7 +149,11 @@ const RoutineOverview = () => {
             <div className="my-2">
               <div className="text-lg font-bold">Exercise Overview</div>
             </div>
-            <div>{ExerciseOverview(data)}</div>
+            <div>
+              {isWorkoutData(data)
+                ? WorkoutExerciseOverview(data)
+                : RoutineExerciseOverview(data)}
+            </div>
           </div>
         </div>
       </div>
@@ -112,12 +161,12 @@ const RoutineOverview = () => {
   );
 };
 
-const deleteRoutineDialog = (id: string, navigate: NavigateFunction) => {
+const deleteDialog = (id: string, navigate: NavigateFunction, name: string) => {
   return (
     <dialog id="dialog" className="modal">
       <div className="modal-box pb-2">
         <p className="text-center text-lg font-semibold">
-          Confirm Delete Routine?
+          Confirm Delete {name}?
         </p>
         <form method="dialog" className="flex justify-center gap-10 py-4">
           <div className="flex gap-3">
@@ -127,9 +176,15 @@ const deleteRoutineDialog = (id: string, navigate: NavigateFunction) => {
             <button
               className="btn btn-error text-error-content"
               onClick={() => {
-                deleteRoutine(id).then(() => {
-                  navigate("/routines");
-                });
+                if (name === "Routine") {
+                  deleteRoutine(id).then(() => {
+                    navigate("/routines");
+                  });
+                } else if (name === "Workout") {
+                  deleteWorkout(id).then(() => {
+                    navigate("/");
+                  });
+                }
               }}
             >
               Confirm
@@ -144,7 +199,7 @@ const deleteRoutineDialog = (id: string, navigate: NavigateFunction) => {
   );
 };
 
-const ExerciseOverview = (data: RoutineWithInfo) => {
+const RoutineExerciseOverview = (data: RoutineWithInfo) => {
   const exercises = [...data.Routine_Exercise, ...data.Routine_Custom_Exercise];
   return (
     <div className="flex flex-col gap-3">
@@ -221,6 +276,83 @@ const ExerciseOverview = (data: RoutineWithInfo) => {
   );
 };
 
+const WorkoutExerciseOverview = (data: WorkoutWithInfo) => {
+  const exercises = [...data.Workout_Exercise, ...data.Workout_Custom_Exercise];
+  return (
+    <div className="flex flex-col gap-3">
+      {exercises
+        .sort((a, b) => a.index - b.index)
+        .map((exercise) => {
+          const isCustomExercise = "Custom_Exercise" in exercise;
+          return (
+            <div key={exercise.workout_uuid}>
+              {isCustomExercise ? (
+                <Exercise
+                  image={exercise.Custom_Exercise.image}
+                  name={exercise.Custom_Exercise.name}
+                  exercise={exercise}
+                  set={
+                    data.Workout_Sets.filter(
+                      (set) => set.set_uuid === exercise.workout_uuid,
+                    ).length
+                  }
+                  superset={data.Workout_Superset.some(
+                    (routineCustomExercise) =>
+                      routineCustomExercise.WorkoutSuperset_CustomExercise.some(
+                        (superset) =>
+                          superset.workout_uuid === exercise.workout_uuid,
+                      ),
+                  )}
+                  maxReps={data.Workout_Sets.filter(
+                    (set) => set.set_uuid === exercise.workout_uuid,
+                  ).reduce((acc, curr) => {
+                    if (curr.reps && curr.reps > acc) return curr.reps;
+                    return acc;
+                  }, 0)}
+                  minReps={data.Workout_Sets.filter(
+                    (set) => set.set_uuid === exercise.workout_uuid,
+                  ).reduce((acc, curr) => {
+                    if (curr.reps && curr.reps < acc) return curr.reps;
+                    return acc;
+                  }, 1000)}
+                />
+              ) : (
+                <Exercise
+                  image={exercise.Exercise.image}
+                  name={exercise.Exercise.name}
+                  exercise={exercise}
+                  set={
+                    data.Workout_Sets.filter(
+                      (set) => set.set_uuid === exercise.workout_uuid,
+                    ).length
+                  }
+                  superset={data.Workout_Superset.some((workoutExercise) =>
+                    workoutExercise.WorkoutSuperset_Exercise.some(
+                      (superset) =>
+                        superset.workout_uuid === exercise.workout_uuid,
+                    ),
+                  )}
+                  maxReps={data.Workout_Sets.filter(
+                    (set) => set.set_uuid === exercise.workout_uuid,
+                  ).reduce((acc, curr) => {
+                    if (curr.reps && curr.reps > acc) return curr.reps;
+                    return acc;
+                  }, 0)}
+                  minReps={data.Workout_Sets.filter(
+                    (set) => set.set_uuid === exercise.workout_uuid,
+                  ).reduce((acc, curr) => {
+                    if (curr.reps && curr.reps < acc) return curr.reps;
+                    return acc;
+                  }, 1000)}
+                />
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+};
+
 const Exercise = ({
   image,
   name,
@@ -232,7 +364,11 @@ const Exercise = ({
 }: {
   image: string | null;
   name: string;
-  exercise: RoutineCustomExercise | RoutineExercise;
+  exercise:
+    | RoutineCustomExercise
+    | RoutineExercise
+    | WorkoutExercise
+    | WorkoutCustomExercise;
   set: number;
   superset?: boolean;
   maxReps: number;

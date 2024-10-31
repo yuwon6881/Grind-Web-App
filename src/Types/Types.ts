@@ -84,7 +84,7 @@ type CustomExerciseForWorkoutHistory = {
   user_id: string;
 };
 
-type WorkoutExercise = {
+export type WorkoutExercise = {
   workout_id: string;
   exercise_id: string;
   workout_uuid: string;
@@ -94,7 +94,7 @@ type WorkoutExercise = {
   Exercise: ExerciseForWorkoutHistory;
 };
 
-type WorkoutCustomExercise = {
+export type WorkoutCustomExercise = {
   workout_id: string;
   custom_exercise_id: string;
   workout_uuid: string;

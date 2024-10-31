@@ -144,7 +144,7 @@ const RoutineDetails = () => {
   }, []);
 
   React.useEffect(() => {
-    if (id) {
+    if (id && !workout_id) {
       fetchRoutine(id).then((response) => {
         if (!response.success) {
           setErrorMsg("Routine Not Found");
@@ -875,7 +875,6 @@ const displayRoutine = async (
   };
 
   React.useEffect(() => {
-    if (!routineData) return;
     if (workout_id && !workoutData) return;
 
     const data =
@@ -925,6 +924,7 @@ const displayRoutine = async (
         })),
       ];
     } else {
+      if (!data) return;
       data.Routine_Exercise.forEach((exercise) => {
         routineUUIDs.add(exercise.routine_uuid);
       });
