@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaDumbbell, FaExclamationCircle } from "react-icons/fa";
 import {
+  createCustomMuscle,
   deleteCustomExercise,
   fetchCustomExercises,
   fetchCustomMuscles,
@@ -27,11 +28,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     customExerciseRefetch,
   } = useCustomExercise();
   const { muscleData, muscleisLoading, muscleIsError } = useMuscle();
-  const { customMuscleData, customMuscleisLoading, customMuscleIsError } =
-    useCustomMuscle();
+  const {
+    customMuscleData,
+    customMuscleisLoading,
+    customMuscleIsError,
+    customMuscleRefetch,
+  } = useCustomMuscle();
 
   // State to handle create exercise form data
   const [exerciseName, setExerciseName] = useState("");
+  const [muscleName, setMuscleName] = useState("");
   const [exerciseType, setExerciseType] = useState<string | null>(null);
   const [primaryMuscle, setPrimaryMuscle] = useState<string | null>(null);
   const [secondaryMuscle, setSecondaryMuscle] = useState<string[]>([]);
@@ -120,7 +126,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   return (
     <div
-      className={`h-full flex-col gap-4 border border-accent p-3 ${className}`}
+      className={`h-full flex-col gap-4 rounded-xl border border-accent p-3 ${className}`}
     >
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
       {muscleIsError ||
@@ -133,23 +139,35 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <h5>Exercise Library</h5>
       <div className="flex h-full flex-col gap-2">
         {muscleData && customMuscleData && (
-          <select
-            value={selectedMuscle}
-            onChange={(e) => setSelectedMuscle(e.target.value)}
-            className="select"
-          >
-            <option value="">All Muscles</option>
-            {muscleData.map((muscle: { id: string; name: string }) => (
-              <option value={muscle.name} key={muscle.id}>
-                {muscle.name}
-              </option>
-            ))}
-            {customMuscleData.map((muscle: { id: string; name: string }) => (
-              <option value={muscle.name} key={muscle.id}>
-                {muscle.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center">
+            <select
+              value={selectedMuscle}
+              onChange={(e) => setSelectedMuscle(e.target.value)}
+              className="select w-full"
+            >
+              <option value="">All Muscles</option>
+              {muscleData.map((muscle: { id: string; name: string }) => (
+                <option value={muscle.name} key={muscle.id}>
+                  {muscle.name}
+                </option>
+              ))}
+              {customMuscleData.map((muscle: { id: string; name: string }) => (
+                <option value={muscle.name} key={muscle.id}>
+                  {muscle.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-accent btn-sm"
+              onClick={() => {
+                (
+                  document.getElementById("muscle_modal") as HTMLDialogElement
+                )?.showModal();
+              }}
+            >
+              +
+            </button>
+          </div>
         )}
         <input
           type="text"
@@ -385,6 +403,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           })
                         }
                         muscle={primaryMuscle}
+                        muscleName={muscleName}
+                        setMuscleName={setMuscleName}
+                        customMuscleRefetch={customMuscleRefetch}
                       />
                     );
                   })}
@@ -423,7 +444,19 @@ const CustomExerciseList: React.FC<{
   id: string;
   image: string | null;
   onClick: () => void;
-}> = ({ name, muscle, image, id, onClick }) => {
+  muscleName: string;
+  setMuscleName: (name: string) => void;
+  customMuscleRefetch: () => void;
+}> = ({
+  name,
+  muscle,
+  image,
+  id,
+  onClick,
+  muscleName,
+  setMuscleName,
+  customMuscleRefetch,
+}) => {
   const queryClient = useQueryClient();
 
   const deleteExercise = async (id: string) => {
@@ -464,9 +497,61 @@ const CustomExerciseList: React.FC<{
     );
   };
 
+  const addCustomMuscle = () => {
+    return (
+      <dialog id={`muscle_modal`} className="modal">
+        <div className="modal-box pb-2">
+          <p className="text-center text-lg font-semibold">Add Custom Muscle</p>
+          <form
+            method="dialog"
+            className="flex flex-col items-center justify-center gap-10 py-4"
+          >
+            <div className="flex gap-3">
+              <div>
+                <label htmlFor="exercise_name">Exercise Name*</label>
+                <input
+                  type="text"
+                  value={muscleName}
+                  onChange={(event) => setMuscleName(event?.target.value)}
+                  className="h-9 w-full rounded border border-accent bg-white p-3 text-black focus-visible:outline-none"
+                />
+              </div>
+            </div>
+            <button
+              className="btn btn-accent"
+              onClick={async () => {
+                try {
+                  setMuscleName("");
+                  const response = await createCustomMuscle(muscleName);
+                  if (!response) {
+                    throw new Error("Failed to create muscle");
+                  }
+                  customMuscleRefetch();
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            >
+              Create Muscle
+            </button>
+          </form>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button
+            onClick={() => {
+              setMuscleName("");
+            }}
+          >
+            close
+          </button>
+        </form>
+      </dialog>
+    );
+  };
   return (
     <>
       {deleteAlert(id)}
+      {addCustomMuscle()}
       <button
         className="flex items-center gap-4 hover:cursor-pointer"
         onClick={onClick}
@@ -547,7 +632,7 @@ const useMuscle = () => {
 };
 
 const useCustomMuscle = () => {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["customMuscles"],
     queryFn: fetchCustomMuscles,
   });
@@ -555,6 +640,7 @@ const useCustomMuscle = () => {
     customMuscleData: data?.data,
     customMuscleisLoading: isLoading,
     customMuscleIsError: isError,
+    customMuscleRefetch: refetch,
   };
 };
 

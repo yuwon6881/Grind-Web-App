@@ -136,6 +136,30 @@ export const fetchCustomMuscles = async () => {
   }
 };
 
+export const createCustomMuscle = async (name: string) => {
+  try {
+    const response = await fetch(config.API_URL + "/api/custom_muscle", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to create custom muscle, status: ${response.status}`,
+      );
+
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
 export const fetchDefaultFolder = async () => {
   try {
     const response = await fetch(config.API_URL + "/api/defaultFolder", {
