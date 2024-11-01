@@ -113,12 +113,6 @@ const Navbar: React.FC = () => {
             </Link>
             <Link
               className="link no-underline underline-offset-4 hover:underline"
-              to="/"
-            >
-              Statistics
-            </Link>
-            <Link
-              className="link no-underline underline-offset-4 hover:underline"
               to="/exercises"
             >
               Exercises

@@ -511,6 +511,7 @@ const CustomExerciseList: React.FC<{
                 <label htmlFor="exercise_name">Exercise Name*</label>
                 <input
                   type="text"
+                  required
                   value={muscleName}
                   onChange={(event) => setMuscleName(event?.target.value)}
                   className="h-9 w-full rounded border border-accent bg-white p-3 text-black focus-visible:outline-none"
