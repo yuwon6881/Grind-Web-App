@@ -162,7 +162,7 @@ export type SingleExercise = {
   image: string | null;
   exerciseType: string;
   Exercise_Muscle: ExerciseMuscle[];
-  Workout_Sets: WorkoutSetWithWorkoutDate[];
+  Workout_Sets?: WorkoutSetWithWorkoutDate[];
 };
 
 export type SuperSet = {
@@ -291,6 +291,8 @@ export type InputFieldProps = {
   value: number | string;
   onChange: (value: number | string) => void;
   className?: string;
+  exercise_id: string;
+  setIndex: number;
 };
 
 export type OnGoingWorkout = {
@@ -310,4 +312,21 @@ export type OnGoingWorkoutInfo = {
   ExerciseSet: ExerciseSet[];
   Superset: SuperSet[];
   WorkoutName: string;
+};
+
+export type Personal_Record = {
+  id: string;
+  user_id: string;
+  exercise_id: string | null;
+  custom_exercise_id: string | null;
+  workout_set_id: string;
+}[];
+
+export type Personal_Record_State = {
+  set_uuid: string;
+  exercise_id: string | null;
+  custom_exercise_id: string | null;
+  weight: number;
+  reps: number;
+  volume: number;
 };

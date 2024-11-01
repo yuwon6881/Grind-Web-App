@@ -1,4 +1,5 @@
 import config from "../config";
+import { Personal_Record_State } from "../Types/Types";
 
 export const fetchToken = async () => {
   try {
@@ -312,7 +313,7 @@ export const fetchExercise = async (id: string) => {
       throw new Error(`Failed to fetch exercise, status: ${response.status}`);
 
     const data = await response.json();
-    return data.data;
+    return data;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return Promise.reject(error);
@@ -563,6 +564,79 @@ export const createWorkoutSuperset = async (
     if (!response.ok)
       throw new Error(
         `Failed to create workout superset, status: ${response.status}`,
+      );
+
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchPersonalRecords = async () => {
+  try {
+    const response = await fetch(config.API_URL + "/api/personal_records", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to fetch personal records, status: ${response.status}`,
+      );
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const fetchSets = async (set_id: string) => {
+  try {
+    const response = await fetch(
+      config.API_URL + "/api/personal_record_set/" + set_id,
+      {
+        method: "GET",
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(`Failed to fetch sets, status: ${response.status}`);
+
+    const data = await response.json();
+    return data.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+  }
+};
+
+export const createPersonalRecord = async (
+  personal_record: Personal_Record_State[],
+  workout_id: string,
+) => {
+  try {
+    const response = await fetch(
+      config.API_URL + `/api/personal_record/${workout_id}`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ personal_record }),
+      },
+    );
+
+    if (!response.ok)
+      throw new Error(
+        `Failed to create personal record, status: ${response.status}`,
       );
 
     return response;

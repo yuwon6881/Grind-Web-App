@@ -24,13 +24,17 @@ import {
   ExerciseMuscle,
   ExerciseCustomMuscle,
 } from "../../Types/Types";
-import { WeightUnitContext } from "../../services/Contexts";
+import {
+  OnGoingWorkoutContext,
+  WeightUnitContext,
+} from "../../services/Contexts";
 
 const Exercise: React.FC = () => {
   // Exercise states
   const [exerciseID, setExerciseID] = useState("");
   const [custom, setCustom] = useState(false);
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
+  const { onGoingWorkoutDetails } = React.useContext(OnGoingWorkoutContext);
 
   const { exerciseData, exerciseError, exerciseLoading, exerciseRefetch } =
     useExercise(exerciseID);
@@ -68,15 +72,21 @@ const Exercise: React.FC = () => {
           />
         </div>
       </dialog>
-      <div className="hidden md:block">
-        <ExerciseCard
-          onExerciseClick={(exercise): void => {
-            setExerciseID(exercise.id);
-            setCustom(exercise.custom);
-          }}
-        />
-      </div>
-      <div className="col-span-3 md:col-span-2">
+      <ExerciseCard
+        className="hidden md:block"
+        onExerciseClick={(exercise): void => {
+          setExerciseID(exercise.id);
+          setCustom(exercise.custom);
+        }}
+      />
+      <div
+        className="col-span-3 overflow-y-scroll md:col-span-2"
+        style={{
+          height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
         {!exerciseID ? (
           <div className="mt-3 flex h-full justify-center md:items-center">
             <div className="hidden items-center md:flex">
@@ -117,10 +127,11 @@ const Exercise: React.FC = () => {
             )}
             {exerciseData &&
               exerciseStatistics(
-                exerciseData,
+                exerciseData.data,
                 custom,
                 globalWeightUnit!,
                 setExerciseID,
+                exerciseData.noData,
               )}
             {customExerciseData &&
               exerciseStatistics(
@@ -128,6 +139,7 @@ const Exercise: React.FC = () => {
                 custom,
                 globalWeightUnit!,
                 setExerciseID,
+                false,
               )}
           </>
         )}
@@ -141,6 +153,7 @@ const exerciseStatistics = (
   custom: boolean,
   globalWeightUnit: string,
   setExerciseID: React.Dispatch<React.SetStateAction<string>>,
+  noData: boolean,
 ) => {
   ChartJS.register(
     CategoryScale,
@@ -250,7 +263,7 @@ const exerciseStatistics = (
         </div>
       </div>
 
-      {exerciseData.Workout_Sets.length === 0 ? (
+      {exerciseData?.Workout_Sets?.length === 0 || noData ? (
         <div className="flex h-full items-center justify-center pt-4 text-xl font-semibold">
           No Data Found
         </div>
@@ -284,7 +297,7 @@ const volumeChart = (
 
   const volumePerDay = new Map<string, number>();
 
-  workoutSets.forEach((set) => {
+  workoutSets?.forEach((set) => {
     const date = new Date(set.Workout.start_date).toLocaleDateString();
     if (!volumePerDay.has(date)) {
       volumePerDay.set(
@@ -340,7 +353,7 @@ const maxesChart = (
     { date: string; oneRepMax: number }
   >();
 
-  workoutSets.forEach((set) => {
+  workoutSets?.forEach((set) => {
     const date = new Date(set.Workout.start_date).toLocaleDateString();
     const oneRepMax =
       globalWeightUnit === "KG"
@@ -396,7 +409,7 @@ const weightChart = (
     { date: string; weight: number }
   >();
 
-  workoutSets.forEach((set) => {
+  workoutSets?.forEach((set) => {
     const date = new Date(set.Workout.start_date).toLocaleDateString();
     if (
       !highestWeightPerDay.has(date) ||

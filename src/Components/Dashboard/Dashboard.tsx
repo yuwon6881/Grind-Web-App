@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import CardHistory from "./CardHistory";
 import Calendar from "react-calendar";
 import { fetchWorkouts } from "../../services/Fetchs";
@@ -6,8 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import Loading from "../Loader/Loading";
 import { Workout } from "../../Types/Types";
 import { BiRefresh } from "react-icons/bi";
+import { OnGoingWorkoutContext } from "../../services/Contexts";
 
 const Dashboard: React.FC = () => {
+  const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
+
   const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["workouts"],
     queryFn: fetchWorkouts,
@@ -48,7 +51,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ height: "70vh" }}>
+    <div
+      style={{ height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh" }}
+    >
       <h2>Dashboard</h2>
       <div className="mt-6 grid grid-cols-3 gap-10">
         <div className="order-2 col-span-3 mb-4 space-y-4 lg:order-1 lg:col-span-2">

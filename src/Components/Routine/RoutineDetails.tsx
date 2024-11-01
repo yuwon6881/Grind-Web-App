@@ -15,6 +15,8 @@ import {
   ExerciseSet,
   InputFieldProps,
   OnGoingWorkout,
+  Personal_Record,
+  Personal_Record_State,
   RoutineWithInfo,
   SuperSet,
   WorkoutInfo,
@@ -26,11 +28,14 @@ import { v4 as uuidv4 } from "uuid";
 import config from "../../config";
 import { useQuery } from "@tanstack/react-query";
 import {
+  createPersonalRecord,
   createWorkoutExercises,
   createWorkoutSuperset,
   deleteWorkout,
   fetchDefaultFolder,
+  fetchPersonalRecords,
   fetchRoutine,
+  fetchSets,
   fetchWorkout,
   getWorkout,
   updateWorkout,
@@ -43,6 +48,7 @@ import {
 } from "../../services/Contexts";
 import { useNavigate } from "react-router-dom";
 import { FaDumbbell } from "react-icons/fa";
+import prFile from "../../Assets/pr_sound.mp3";
 
 const RoutineDetails = () => {
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -50,6 +56,9 @@ const RoutineDetails = () => {
   const [exerciseSets, setExerciseSets] = React.useState<ExerciseSet[]>([]);
   const [superset, setSuperset] = React.useState<SuperSet[]>([]);
   const [routineName, setRoutineName] = React.useState("");
+  const [personalRecords, setPersonalRecords] = React.useState<
+    Personal_Record_State[]
+  >([]);
   const { onGoingWorkoutDetails, setOnGoingWorkoutDetails } = React.useContext(
     OnGoingWorkoutContext,
   );
@@ -80,6 +89,11 @@ const RoutineDetails = () => {
       enabled: !!workout_id,
     });
 
+  const { data: personalRecordsData } = useQuery<Personal_Record>({
+    queryKey: ["personalRecords"],
+    queryFn: () => fetchPersonalRecords(),
+  });
+
   // Retrieve default folder id
   const { data, isError } = useQuery({
     queryKey: ["defaultFolder"],
@@ -96,7 +110,95 @@ const RoutineDetails = () => {
     routineData?.data,
     workoutData?.data,
     globalWeightUnit!,
+    !!onGoingWorkoutInfo,
   );
+
+  const isPersonalRecord = async (
+    weight: number,
+    reps: number,
+    exercise_id: string,
+    set_uuid: string,
+    custom: boolean,
+  ): Promise<boolean> => {
+    if (!personalRecordsData) {
+      return false;
+    }
+
+    // Check if personal records state already stored the same exercise pr
+    const isRecord = personalRecords.find(
+      (record) =>
+        record.exercise_id === exercise_id ||
+        record.custom_exercise_id === exercise_id,
+    );
+
+    if (isRecord) {
+      if (weight >= isRecord.weight && weight * reps > isRecord.volume) {
+        setPersonalRecords((prev) => {
+          return prev.map((pr) => {
+            if (pr.set_uuid === isRecord.set_uuid) {
+              return {
+                ...pr,
+                weight: weight,
+                reps: reps,
+                volume: weight * reps,
+              };
+            }
+            return pr;
+          });
+        });
+        return true;
+      } else {
+        return false;
+      }
+    }
+    const checkRecord = async (recordId: string) => {
+      const response = await fetchSets(recordId);
+      if (response) {
+        if (weight >= response.weight && weight * reps > response.volume) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const record = personalRecordsData.find(
+      (record) =>
+        record.exercise_id === exercise_id ||
+        record.custom_exercise_id === exercise_id,
+    );
+
+    if (record) {
+      const isRecord = await checkRecord(record.workout_set_id);
+      if (isRecord) {
+        setPersonalRecords((prev) => [
+          ...prev,
+          {
+            set_uuid: set_uuid,
+            exercise_id: record.exercise_id,
+            custom_exercise_id: record.custom_exercise_id,
+            weight: weight,
+            reps: reps,
+            volume: weight * reps,
+          },
+        ]);
+        return true;
+      }
+    } else {
+      setPersonalRecords((prev) => [
+        ...prev,
+        {
+          set_uuid: set_uuid,
+          exercise_id: custom ? null : exercise_id,
+          custom_exercise_id: custom ? exercise_id : null,
+          weight: weight,
+          reps: reps,
+          volume: weight * reps,
+        },
+      ]);
+    }
+
+    return false;
+  };
 
   const calculateDuration = () => {
     if (!workoutInfo) return "N/A";
@@ -125,6 +227,57 @@ const RoutineDetails = () => {
   const clearWorkoutInfo = () => {
     setOnGoingWorkoutInfo!(undefined);
   };
+
+  useEffect(() => {
+    // If exercise sets does not belongs to any exercise, remove it
+    setExerciseSets((prev) => {
+      return prev.filter((set) => exercises.find((ex) => ex.id === set.id));
+    });
+  }, [exercises]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (personalRecords) {
+        setPersonalRecords((prev) => {
+          return prev.map((pr) => {
+            const relatedSets = exerciseSets.filter((set) => {
+              return (
+                (set.id.split("@")[0] === pr.custom_exercise_id &&
+                  set.completed) ||
+                (set.id.split("@")[0] === pr.exercise_id && set.completed)
+              );
+            });
+
+            // retrieve the set with the highest volume
+            const relatedSet = relatedSets.reduce((prev, current) => {
+              return Number(prev.weight) * Number(prev.reps) >
+                Number(current.weight) * Number(current.reps)
+                ? prev
+                : current;
+            }, relatedSets[0]);
+
+            return relatedSet
+              ? {
+                  ...pr,
+                  weight:
+                    globalWeightUnit === "KG"
+                      ? Number(relatedSet.weight)
+                      : Number(relatedSet.weight) / 2.20462,
+                  reps: Number(relatedSet.reps),
+                  volume:
+                    globalWeightUnit === "KG"
+                      ? Number(relatedSet.weight)
+                      : (Number(relatedSet.weight) / 2.20462) *
+                        Number(relatedSet.reps),
+                }
+              : pr;
+          });
+        });
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [exerciseSets]);
 
   useEffect(() => {
     if (superset.length < 2) setSuperset([]);
@@ -225,10 +378,19 @@ const RoutineDetails = () => {
           ]);
         }}
       />
-      <div className="col-span-3 md:col-span-2">
+      <div
+        className="col-span-3 overflow-y-auto md:col-span-2"
+        style={{
+          height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
         <form
           className="mt-2 flex flex-col gap-2"
-          style={{ height: "70vh" }}
+          style={{
+            height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh",
+          }}
           onSubmit={(e) => {
             handleSubmit(
               e,
@@ -241,6 +403,7 @@ const RoutineDetails = () => {
               exerciseSets,
               superset,
               navigate,
+              personalRecords,
             );
           }}
         >
@@ -322,6 +485,26 @@ const RoutineDetails = () => {
               </button>
             )}
           </div>
+          <div
+            id="PR_alert"
+            role="alert"
+            className="alert alert-success hidden rounded-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="h-6 w-6 shrink-0 stroke-current"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <span>Congratulations On Your New PR</span>
+          </div>
           <input
             type="text"
             placeholder="Routine Name"
@@ -386,6 +569,7 @@ const RoutineDetails = () => {
                       globalWeightUnit={globalWeightUnit!}
                       setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
                       WorkoutInfo={workoutInfo}
+                      isPersonalRecord={isPersonalRecord}
                     />
                   </div>
                 ))}
@@ -456,6 +640,13 @@ const Exercise: React.FC<{
     React.SetStateAction<OnGoingWorkout | undefined>
   >;
   WorkoutInfo: WorkoutInfo | null;
+  isPersonalRecord: (
+    weight: number,
+    reps: number,
+    exercise_id: string,
+    set_uuid: string,
+    custom: boolean,
+  ) => Promise<boolean>;
 }> = ({
   exercise,
   index,
@@ -469,6 +660,7 @@ const Exercise: React.FC<{
   globalWeightUnit,
   setOnGoingWorkoutDetails,
   WorkoutInfo,
+  isPersonalRecord,
 }) => {
   function removeExercise(index: number): void {
     const newExercises = [...exercises];
@@ -622,6 +814,7 @@ const Exercise: React.FC<{
         globalWeightUnit={globalWeightUnit}
         setOnGoingWorkoutDetails={setOnGoingWorkoutDetails!}
         WorkoutInfo={WorkoutInfo}
+        isPersonalRecord={isPersonalRecord}
       />
       <button
         type="button"
@@ -646,6 +839,13 @@ const Sets: React.FC<{
     React.SetStateAction<OnGoingWorkout | undefined>
   >;
   WorkoutInfo: WorkoutInfo | null;
+  isPersonalRecord: (
+    weight: number,
+    reps: number,
+    exercise_id: string,
+    set_uuid: string,
+    custom: boolean,
+  ) => Promise<boolean>;
 }> = ({
   exercise,
   exerciseSets,
@@ -654,6 +854,7 @@ const Sets: React.FC<{
   globalWeightUnit,
   setOnGoingWorkoutDetails,
   WorkoutInfo,
+  isPersonalRecord,
 }) => {
   function removeSet(id: string): void {
     const [exerciseID, setIndex] = id.split("#");
@@ -748,6 +949,8 @@ const Sets: React.FC<{
               value={set.weight}
               onChange={(newWeight) => updateSet(setIndex, "weight", newWeight)}
               className="max-w-20"
+              exercise_id={exercise.id}
+              setIndex={setIndex}
             />
             <InputField
               label="Reps"
@@ -755,6 +958,8 @@ const Sets: React.FC<{
               value={set.reps}
               onChange={(newReps) => updateSet(setIndex, "reps", newReps)}
               className="max-w-20"
+              exercise_id={exercise.id}
+              setIndex={setIndex}
             />
             <InputField
               label="RPE"
@@ -762,6 +967,8 @@ const Sets: React.FC<{
               value={set.rpe}
               onChange={(newRpe) => updateSet(setIndex, "rpe", newRpe)}
               className="max-w-10"
+              exercise_id={exercise.id}
+              setIndex={setIndex}
             />
             {workout_id && (
               <div className="flex flex-col items-center gap-1 pb-2">
@@ -772,7 +979,7 @@ const Sets: React.FC<{
                     id={`checkbox-${exercise.id}-${setIndex}`}
                     className="checkbox-accent checkbox rounded"
                     checked={set.completed}
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       setExerciseSets((prev) => {
                         return prev.map((prevSet) => {
                           if (prevSet.set_uuid === set.set_uuid) {
@@ -787,6 +994,27 @@ const Sets: React.FC<{
                         checkbox.checked &&
                         WorkoutInfo?.status === "IN_PROGRESS"
                       ) {
+                        const isPR = await isPersonalRecord(
+                          globalWeightUnit === "KG"
+                            ? Number(set.weight)
+                            : Number(set.weight) / 2.20462,
+                          Number(set.reps),
+                          exercise.id.split("@")[0],
+                          set.set_uuid,
+                          exercise.custom,
+                        );
+
+                        if (isPR) {
+                          const prAlert = document.querySelector(
+                            "#PR_alert",
+                          ) as HTMLElement;
+                          prAlert.classList.remove("hidden");
+                          const prSound = new Audio(prFile);
+                          prSound.play();
+                          setTimeout(() => {
+                            prAlert.classList.add("hidden");
+                          }, 3000);
+                        }
                         setOnGoingWorkoutDetails!((prev) => {
                           if (parseFloat(exercise.restTime) >= 1) {
                             const seconds =
@@ -834,6 +1062,8 @@ const InputField: React.FC<InputFieldProps> = ({
   value,
   onChange,
   className,
+  exercise_id,
+  setIndex,
 }) => {
   return (
     <div className="flex flex-col items-center gap-1">
@@ -844,6 +1074,12 @@ const InputField: React.FC<InputFieldProps> = ({
         className={`input input-sm input-accent ${className}`}
         value={value}
         onChange={(e) => {
+          const checkbox = document.getElementById(
+            `checkbox-${exercise_id}-${setIndex}`,
+          ) as HTMLInputElement;
+          if (checkbox.checked && label !== "RPE") {
+            checkbox.click();
+          }
           let newValue: number | string = e.target.valueAsNumber;
           if (isNaN(newValue)) {
             newValue = "";
@@ -867,6 +1103,7 @@ const displayRoutine = async (
   routineData: RoutineWithInfo | undefined,
   workoutData: WorkoutWithInfo | undefined,
   globalWeightUnit: string,
+  onGoingWorkoutInfo: boolean,
 ) => {
   const isWorkoutData = (
     data: RoutineWithInfo | WorkoutWithInfo,
@@ -876,6 +1113,7 @@ const displayRoutine = async (
 
   React.useEffect(() => {
     if (workout_id && !workoutData) return;
+    if (onGoingWorkoutInfo) return;
 
     const data =
       workout_id && workoutData?.status === "COMPLETED"
@@ -1285,6 +1523,7 @@ const handleSubmit = async (
   exerciseSets: ExerciseSet[],
   superset: SuperSet[],
   navigate: NavigateFunction,
+  personalRecord: Personal_Record_State[],
 ): Promise<void> => {
   e.preventDefault();
 
@@ -1361,7 +1600,11 @@ const handleSubmit = async (
             ? {
                 volume:
                   (set.reps ? parseInt(set.reps as string) : 0) *
-                  (set.weight ? parseFloat(set.weight as string) : 0),
+                  (set.weight
+                    ? globalWeightUnit === "KG"
+                      ? parseFloat(set.weight as string)
+                      : parseFloat(set.weight as string) / 2.20462
+                    : 0),
               }
             : {}),
         }));
@@ -1429,6 +1672,18 @@ const handleSubmit = async (
       if (!exercisesResponse.ok) {
         const error = await exercisesResponse.json();
         throw new Error(error.message);
+      }
+
+      if (personalRecord.length > 0) {
+        const prResponse = (await createPersonalRecord(
+          personalRecord,
+          workout_id,
+        )) as unknown as Response;
+
+        if (!prResponse.ok) {
+          const error = await prResponse.json();
+          throw new Error(error.message);
+        }
       }
     }
 

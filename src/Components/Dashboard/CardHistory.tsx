@@ -64,7 +64,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
           <div className="flex flex-col gap-8">
             <div className="flex h-12 items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-14 w-14 rounded-full bg-neutral text-neutral-content">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral text-neutral-content">
                   {globalUser!.profilePicture ? (
                     <img
                       src={globalUser!.profilePicture}
