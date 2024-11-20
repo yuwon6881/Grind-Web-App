@@ -120,7 +120,7 @@ const Routines = () => {
       <div className="card mt-6 border border-accent bg-base-100">
         <div className="card-body">
           <div className="flex justify-end">
-            <div className="dropdown dropdown-right flex justify-between gap-3">
+            <div className="dropdown dropdown-left flex justify-between gap-3">
               {routineData?.length > 1 || folderData?.length > 2 ? (
                 <button className="btn border border-accent hover:bg-base-300">
                   <BiShuffle />
