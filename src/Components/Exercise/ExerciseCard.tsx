@@ -139,7 +139,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <h5>Exercise Library</h5>
       <div className="flex h-full flex-col gap-2">
         {muscleData && customMuscleData && (
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <select
               value={selectedMuscle}
               onChange={(e) => setSelectedMuscle(e.target.value)}
