@@ -107,6 +107,13 @@ const Navbar: React.FC = () => {
           <div className="absolute bottom-1/2 left-1/2 hidden -translate-x-1/2 translate-y-1/2 transform items-center gap-3 md:flex">
             <Link
               className="link no-underline underline-offset-4 hover:underline"
+              to="/"
+            >
+              Workout
+            </Link>
+
+            <Link
+              className="link no-underline underline-offset-4 hover:underline"
               to="/routines"
             >
               Routines
@@ -174,18 +181,18 @@ const Navbar: React.FC = () => {
                   <Link
                     className="link no-underline"
                     onClick={handleClick}
-                    to="/routines"
+                    to="/"
                   >
-                    Routines
+                    Workout
                   </Link>
                 </li>
                 <li>
                   <Link
                     className="link no-underline"
                     onClick={handleClick}
-                    to="/"
+                    to="/routines"
                   >
-                    Statistics
+                    Routines
                   </Link>
                 </li>
                 <li>
