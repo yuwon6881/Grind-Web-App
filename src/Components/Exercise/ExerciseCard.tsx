@@ -124,10 +124,68 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     (document.getElementById("exercise_modal") as HTMLDialogElement)?.close();
   };
 
+  const addCustomMuscle = () => {
+    return (
+      <dialog id="muscle_modal" className="modal">
+        <div className="modal-box pb-2">
+          <p className="text-center text-lg font-semibold">Add Custom Muscle</p>
+          <form
+            method="dialog"
+            className="flex flex-col items-center justify-center gap-10 py-4"
+          >
+            <div className="flex gap-3">
+              <div>
+                <label htmlFor="exercise_name">Muscle Name*</label>
+                <input
+                  type="text"
+                  required
+                  value={muscleName}
+                  onChange={(event) => setMuscleName(event?.target.value)}
+                  className="h-9 w-full rounded border border-accent bg-white p-3 text-black focus-visible:outline-none"
+                />
+              </div>
+            </div>
+            <button
+              className="btn btn-accent"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  setMuscleName("");
+                  const response = await createCustomMuscle(muscleName);
+                  if (!response) {
+                    throw new Error("Failed to create muscle");
+                  }
+                  customMuscleRefetch();
+                  (document.getElementById(
+                    "muscle_modal",
+                  ) as HTMLDialogElement).close();
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            >
+              Create Muscle
+            </button>
+          </form>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button
+            onClick={() => {
+              setMuscleName("");
+            }}
+          >
+            close
+          </button>
+        </form>
+      </dialog>
+    );
+  };
+
   return (
     <div
       className={`h-full flex-col gap-4 rounded-xl border border-accent p-3 ${className}`}
     >
+      {addCustomMuscle()}
       {muscleisLoading || (customMuscleisLoading && <Loading />)}
       {muscleIsError ||
         (customMuscleIsError && (
@@ -497,62 +555,9 @@ const CustomExerciseList: React.FC<{
     );
   };
 
-  const addCustomMuscle = () => {
-    return (
-      <dialog id={`muscle_modal`} className="modal">
-        <div className="modal-box pb-2">
-          <p className="text-center text-lg font-semibold">Add Custom Muscle</p>
-          <form
-            method="dialog"
-            className="flex flex-col items-center justify-center gap-10 py-4"
-          >
-            <div className="flex gap-3">
-              <div>
-                <label htmlFor="exercise_name">Exercise Name*</label>
-                <input
-                  type="text"
-                  required
-                  value={muscleName}
-                  onChange={(event) => setMuscleName(event?.target.value)}
-                  className="h-9 w-full rounded border border-accent bg-white p-3 text-black focus-visible:outline-none"
-                />
-              </div>
-            </div>
-            <button
-              className="btn btn-accent"
-              onClick={async () => {
-                try {
-                  setMuscleName("");
-                  const response = await createCustomMuscle(muscleName);
-                  if (!response) {
-                    throw new Error("Failed to create muscle");
-                  }
-                  customMuscleRefetch();
-                } catch (error) {
-                  console.error(error);
-                }
-              }}
-            >
-              Create Muscle
-            </button>
-          </form>
-        </div>
-        <form method="dialog" className="modal-backdrop">
-          <button
-            onClick={() => {
-              setMuscleName("");
-            }}
-          >
-            close
-          </button>
-        </form>
-      </dialog>
-    );
-  };
   return (
     <>
       {deleteAlert(id)}
-      {addCustomMuscle()}
       <button
         className="flex items-center gap-4 hover:cursor-pointer"
         onClick={onClick}
