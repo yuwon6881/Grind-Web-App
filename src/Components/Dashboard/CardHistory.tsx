@@ -14,11 +14,16 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
   const { globalUser } = React.useContext(UserContext);
   const { globalWeightUnit } = React.useContext(WeightUnitContext);
 
-  const formatDuration = (milliseconds: number) => {
-    const totalMinutes = Math.floor(milliseconds / 60000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
+  const formatDuration = (start: string, end: string) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const duration = endDate.getTime() - startDate.getTime();
+  
+    const hours = Math.floor(duration / (1000 * 60 * 60));
+    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+  
+    return `${hours}h ${minutes}m ${seconds}s`;
   };
 
   const exercises = data.Workout_Exercise.map((exercise) => ({
@@ -121,7 +126,7 @@ const CardHistory: React.FC<{ data: Workout; workoutRefetch: () => void }> = ({
                 <div>
                   <div>
                     <span className="text-sm">Duration</span>
-                    <h6>{formatDuration(data.duration)}</h6>
+                    <h6>{formatDuration(data.start_date, data.end_date!)}</h6>
                   </div>
                 </div>
                 <div>

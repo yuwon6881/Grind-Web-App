@@ -381,7 +381,7 @@ const RoutineDetails = () => {
       <div
         className="col-span-3 overflow-y-auto md:col-span-2"
         style={{
-          height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh",
+          height: onGoingWorkoutDetails?.Workout_ID ? "" : "100vh",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
         }}
@@ -389,7 +389,7 @@ const RoutineDetails = () => {
         <form
           className="mt-2 flex flex-col gap-2"
           style={{
-            height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh",
+            height: onGoingWorkoutDetails?.Workout_ID ? "" : "100vh",
           }}
           onSubmit={(e) => {
             handleSubmit(

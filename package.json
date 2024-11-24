@@ -41,6 +41,7 @@
     "@types/react-calendar": "^4.1.0",
     "@types/react-icons": "^3.0.0",
     "chart.js": "^4.4.4",
+    "date-fns": "^4.1.0",
     "lodash.merge": "^4.6.2",
     "react": "^18.2.0",
     "react-calendar": "^4.8.0",

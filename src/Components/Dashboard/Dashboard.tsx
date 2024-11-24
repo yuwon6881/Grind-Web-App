@@ -7,6 +7,7 @@ import Loading from "../Loader/Loading";
 import { Workout } from "../../Types/Types";
 import { BiRefresh } from "react-icons/bi";
 import { OnGoingWorkoutContext } from "../../services/Contexts";
+import { format } from "date-fns";
 
 const Dashboard: React.FC = () => {
   const { onGoingWorkoutDetails } = useContext(OnGoingWorkoutContext);
@@ -43,7 +44,7 @@ const Dashboard: React.FC = () => {
           workout.status === "COMPLETED"
         ) {
           const date = new Date(workout.start_date);
-          const formattedDate = date.toISOString().split("T")[0];
+          const formattedDate = format(date, 'yyyy-MM-dd');
           setFilterDate(formattedDate);
         }
       }
@@ -52,7 +53,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div
-      style={{ height: onGoingWorkoutDetails?.Workout_ID ? "79vh" : "100vh" }}
+      style={{ height: onGoingWorkoutDetails?.Workout_ID ? "" : "100vh" }}
     >
       <h2>Dashboard</h2>
       <div className="mt-6 grid grid-cols-3 gap-10">
@@ -76,7 +77,7 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
           )}
-          {data && data.length === 0 && (
+          {data && data.filter((workout: Workout) => workout.status == "COMPLETED").length === 0 && (
             <div className="text-center">No workout history</div>
           )}
           {data &&
@@ -94,8 +95,7 @@ const Dashboard: React.FC = () => {
                     data={workout}
                     workoutRefetch={refetch}
                   />
-                ) : new Date(workout.start_date).toISOString().split("T")[0] ===
-                  filterDate ? (
+                ) : format(new Date(workout.start_date), 'yyyy-MM-dd') === filterDate ? (
                   <CardHistory
                     key={workout.id}
                     data={workout}
