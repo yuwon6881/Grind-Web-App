@@ -76,6 +76,9 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
           )}
+          {data && data.length === 0 && (
+            <div className="text-center">No workout history</div>
+          )}
           {data &&
             data
               .filter((workout: Workout) => workout.status == "COMPLETED")

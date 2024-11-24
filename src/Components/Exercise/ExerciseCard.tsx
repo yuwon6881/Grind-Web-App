@@ -247,7 +247,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             +
           </button>
           <dialog id="exercise_modal" className="modal">
-            <div className="modal-box h-1/2 rounded-xl border border-accent">
+            <div className="modal-box rounded-xl border border-accent">
               {muscleData && customMuscleData && (
                 <form
                   className="mb-2 flex flex-col items-center gap-4"

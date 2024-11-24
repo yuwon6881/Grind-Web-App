@@ -1077,7 +1077,7 @@ const InputField: React.FC<InputFieldProps> = ({
           const checkbox = document.getElementById(
             `checkbox-${exercise_id}-${setIndex}`,
           ) as HTMLInputElement;
-          if (checkbox.checked && label !== "RPE") {
+          if (checkbox?.checked && label !== "RPE") {
             checkbox.click();
           }
           let newValue: number | string = e.target.valueAsNumber;
